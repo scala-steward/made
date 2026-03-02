@@ -3,17 +3,15 @@ package example.show
 
 class ShowTest extends munit.FunSuite:
   test("showProduct") {
-    val user = User("Alice", 30)
     val userShow = Show.derived[User]
 
-    assertEquals(userShow.show(user), "User(name = Alice, age = 30)")
+    assertEquals(userShow.show(User("Alice", 30)), "User(name = Alice, age = 30)")
   }
 
   test("showTransparent") {
-    val email = Email("alice@example.com")
     val emailShow = Show.derived[Email]
 
-    assertEquals(emailShow.show(email), "alice@example.com")
+    assertEquals(emailShow.show(Email("alice@example.com")), "alice@example.com")
   }
 
   test("showSum") {

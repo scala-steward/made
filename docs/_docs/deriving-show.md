@@ -120,17 +120,16 @@ the wrapper.
 
 For `Show`, a transparent type displays as `TypeName(innerValue)` -- the wrapper name followed by the shown inner value.
 
-Transparent derivation follows the same `constValue` pattern for the type name. Instead of iterating multiple fields,
-you call `unwrap(value)` on the mirror to get the single inner value, then show it recursively. The function takes
+Transparent derivation unwraps the value and delegates to the underlying type's `Show`. The function takes
 `Made.TransparentOf[T]` as the mirror parameter. `compiletime.summonInline[Show[m.MirroredElemType]]` resolves the
-`Show` instance for the single underlying type at compile time.
+`Show` instance for the single underlying type at compile time. Because the type is transparent, the wrapper name is
+omitted -- `Email("alice@example.com")` shows as `alice@example.com`, not `Email(alice@example.com)`.
 
 ```scala
 inline def deriveTransparent[T](m: Made.TransparentOf[T]): Show[T] = value =>
-  val typeName = compiletime.constValue[m.MirroredLabel]
   val underlyingShow = compiletime.summonInline[Show[m.MirroredElemType]]
   val inner = m.unwrap(value)
-  s"$typeName(${underlyingShow.show(inner)})"
+  underlyingShow.show(inner)
 ```
 
 Transparent mirrors also carry a single-element `mirroredElems` tuple containing one `MadeFieldElem`, so you could
@@ -215,7 +214,7 @@ val userShow = Show.derived[User]
 assert(userShow.show(User("Alice", 30)) == "User(name = Alice, age = 30)")
 
 val emailShow = Show.derived[Email]
-assert(emailShow.show(Email("alice@example.com")) == "Email(alice@example.com)")
+assert(emailShow.show(Email("alice@example.com")) == "alice@example.com")
 
 val shapeShow: Show[Shape] = Show.derived[Shape]
 assert(shapeShow.show(Point) == "Point")
@@ -244,7 +243,7 @@ Expected output:
 
 ```
 User(name = Alice, age = 30)
-Email(alice@example.com)
+alice@example.com
 Point
 Circle(radius = 3.14)
 Rectangle(width = 2.0, height = 5.0)
