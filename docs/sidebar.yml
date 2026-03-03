@@ -1,11 +1,10 @@
-- title: Deriving Type Classes with Made
-  path: deriving-show.md
-
-- title: Default Values
-  path: defaults.md
-
-- title: Generated Members
-  path: generated-members.md
-
-- title: Transparent Wrapping
-  path: transparent-wrapping.md
+index: index.html
+subsection:
+  - title: Deriving Type Classes with Made
+    page: deriving-show.md
+  - title: Default Values
+    page: defaults.md
+  - title: Generated Members
+    page: generated-members.md
+  - title: Transparent Wrapping
+    page: transparent-wrapping.md
