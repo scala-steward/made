@@ -149,6 +149,33 @@ class MadeDefaultsTest extends munit.FunSuite:
     assertEquals(b.default, Some(None))
   }
 
+  test("generic case class with Scala default") {
+    val m = Made.derived[GenericWithDefault[Int]]
+
+    val (a, label) = m.mirroredElems
+
+    assert(a.default.isEmpty)
+    assert(label.default.contains("default"))
+  }
+
+  test("generic case class with type-dependent default") {
+    val m = Made.derived[GenericPair[String]]
+
+    val (a, b) = m.mirroredElems
+
+    assert(a.default.isEmpty)
+    assert(b.default.contains(None))
+  }
+
+  test("generic case class with @whenAbsent takes priority") {
+    val m = Made.derived[GenericWhenAbsent[Int]]
+
+    val (a, b) = m.mirroredElems
+
+    assert(a.default.isEmpty)
+    assert(b.default.contains("annotated"))
+  }
+
   test("@optionalParam with custom Default") {
     given Default[CustomOpt[String]] = () => CustomOpt("none")
 
@@ -187,3 +214,7 @@ object RecWithDefault:
   case class Node(value: Int, @whenAbsent(None) next: Option[Node])
 object RecWithScalaDefault:
   case class Node(value: Int, next: Option[Node] = None)
+
+case class GenericWithDefault[T](a: T, label: String = "default")
+case class GenericPair[T](a: T, b: Option[T] = None)
+case class GenericWhenAbsent[T](a: T, @whenAbsent("annotated") b: String = "default")

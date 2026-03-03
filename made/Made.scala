@@ -348,8 +348,11 @@ object Made:
       }
       def fromDefaultValue = tSymbol.companionModule.methodMembers.collectFirst:
         case m if m.name.startsWith("$lessinit$greater$default$" + (index + 1)) =>
-          // todo: generics
-          Ref(m).asExprOf[E]
+          val ref = Ref(m)
+          val applied = tTpe.typeArgs match
+            case Nil  => ref
+            case args => ref.appliedToTypes(args)
+          applied.asExprOf[E]
 
       fromWhenAbsent orElse fromOptionalParam orElse fromDefaultValue
     }

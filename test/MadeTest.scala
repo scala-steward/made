@@ -319,6 +319,12 @@ class MadeTest extends munit.FunSuite:
     assert(result == Box("content"))
   }
 
+  test("inherit name"){
+    val mirror = Made.derived[InheritedName]
+    val fieldElem *: EmptyTuple = mirror.mirroredElems
+    summon[fieldElem.MirroredLabel =:= "customName"]
+  }
+
 sealed trait MixedADT
 sealed trait HKADT[F[_], T]
 case class SimpleCaseClass(id: Long, name: String)
@@ -357,3 +363,10 @@ case object SimpleObject
 object MixedADT:
   case class CaseClass(v: Int) extends MixedADT
   case object CaseObj extends MixedADT
+
+
+trait TraitWithName:
+  @name("customName")
+  def field: String
+
+case class InheritedName(field: String) extends TraitWithName
