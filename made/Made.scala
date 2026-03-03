@@ -350,7 +350,7 @@ object Made:
         case m if m.name.startsWith("$lessinit$greater$default$" + (index + 1)) =>
           val ref = Ref(m)
           val applied = tTpe.typeArgs match
-            case Nil  => ref
+            case Nil => ref
             case args => ref.appliedToTypes(args)
           applied.asExprOf[E]
 
