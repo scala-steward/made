@@ -1,5 +1,6 @@
 ---
 title: Deriving Type Classes with Made
+order: 1
 ---
 
 # Deriving Type Classes with Made

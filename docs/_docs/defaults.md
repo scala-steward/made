@@ -1,5 +1,6 @@
 ---
 title: Default Values
+order: 3
 ---
 
 # Default Values
@@ -14,8 +15,8 @@ constructor signatures at compile time, selects the highest-priority source, and
 element. At runtime, calling `.default` simply returns the pre-computed `Option` - there is no reflection or annotation
 processing at runtime.
 
-This guide assumes you have read the type class derivation guide and understand Made mirrors, `MadeFieldElem`, and the
-`constValueTuple` pattern for label extraction.
+This guide assumes you have read the [type class derivation guide](deriving-show.md) and understand Made mirrors,
+`MadeFieldElem`, and the `constValueTuple` pattern for label extraction.
 
 ## The Priority Chain
 
@@ -185,7 +186,7 @@ val alice = summon[FromMap[User]].fromMap(Map("name" -> "Alice", "age" -> 30))
 assert(alice == User("Alice", 30, None))
 
 val bob = summon[FromMap[User]].fromMap(Map("name" -> "Bob", "address" -> Some("Cracow")))
-assert(bob == User("Alice", 25, Some("Cracow")))
+assert(bob == User("Bob", 25, Some("Cracow")))
 ```
 
 The `User` type has a constructor default of `25` for `age` and optional address param. When the map contains only

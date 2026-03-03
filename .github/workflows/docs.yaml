@@ -4,6 +4,8 @@ on:
   push:
     tags:
       - 'v*'
+#    todo: remove later
+    branches: [ "main" ]
   workflow_dispatch:
 
 permissions:

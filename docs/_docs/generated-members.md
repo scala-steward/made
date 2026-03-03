@@ -1,5 +1,6 @@
 ---
 title: Generated Members
+order: 4
 ---
 
 # Generated Members
@@ -14,8 +15,8 @@ computed fields. A JSON schema generator, for example, may want to expose a `ful
 `lastName` as a read-only property in the schema output. With Made, the derivation can discover and access that computed
 member through the same mirror it uses for constructor fields.
 
-This guide assumes you have read the type class derivation guide and understand Made mirrors, `MadeFieldElem`, and the
-`mirroredElems` tuple.
+This guide assumes you have read the [type class derivation guide](deriving-show.md) and understand Made mirrors,
+`MadeFieldElem`, and the `mirroredElems` tuple.
 
 ## The Two-Tuple Model
 
@@ -26,7 +27,7 @@ with `@generated`.
 
 This separation is intentional. Generated members cannot participate in product construction (`fromUnsafeArray`) because
 they are computed from an instance, not stored as constructor parameters. Keeping them in a separate tuple means
-existing derivation code - like `Show[T]` from the type class derivation guide - continues to work without
+existing derivation code - like `Show[T]` from the [type class derivation guide](deriving-show.md) - continues to work without
 modification. It simply never sees generated members.
 
 The following example defines a `Measurement` type with two constructor fields and one generated def, then demonstrates

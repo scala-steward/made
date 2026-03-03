@@ -1,5 +1,6 @@
 ---
 title: Transparent Wrapping
+order: 2
 ---
 
 # Transparent Wrapping
@@ -14,7 +15,7 @@ Transparent wrappers are common in domain modelling. Types like `Email(value: St
 for these types, you typically want to delegate to the inner type rather than treating them as single-field products.
 Made's transparent mirror makes this delegation explicit.
 
-This guide assumes familiarity with Made mirrors and the type class derivation pattern from the Show derivation guide.
+This guide assumes familiarity with Made mirrors and the type class derivation pattern from the [Show derivation guide](deriving-show.md).
 
 ## Defining a Transparent Type
 

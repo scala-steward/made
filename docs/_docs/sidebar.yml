@@ -1,0 +1,11 @@
+- title: Deriving Type Classes with Made
+  path: deriving-show.md
+
+- title: Default Values
+  path: defaults.md
+
+- title: Generated Members
+  path: generated-members.md
+
+- title: Transparent Wrapping
+  path: transparent-wrapping.md
