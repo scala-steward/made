@@ -27,6 +27,12 @@ private[made] def stringToType(str: String)(using quotes: Quotes): Type[? <: Str
   import quotes.reflect.*
   ConstantType(StringConstant(str)).asType.asInstanceOf[Type[? <: String]]
 
+private[made] def typeToString[S <: String: Type](using quotes: Quotes): S =
+  import quotes.reflect.*
+  TypeRepr.of[S] match
+    case ConstantType(StringConstant(str)) => str.asInstanceOf[S]
+    case _ => report.errorAndAbort(s"Unsupported singleton type: ${Type.show[S]}")
+
 private[made] def traverseTypes(tpes: List[Type[? <: AnyKind]])(using Quotes): Type[? <: Tuple] =
   val empty: Type[? <: Tuple] = Type.of[EmptyTuple]
   tpes.foldRight(empty):

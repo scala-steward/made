@@ -94,7 +94,6 @@ sealed trait Made:
    */
   inline def getAnnotation[A <: MetaAnnotation]: Option[A] = ${ getAnnotationImpl[A, this.type] }
 
-
 /**
  * Base type for elements within a [[Made]] mirror's `MirroredElems` tuple.
  *
@@ -525,14 +524,14 @@ object Made:
                 }
               } =>
 
-            val elems = Expr.ofTupleFromSeq(
+            val elems = (
               tSymbol.caseFields.zipWithIndex
                 .zip(traverseTuple(Type.of[mirroredElemTypes]))
                 .map:
                   case ((fieldSymbol, index), '[fieldTpe]) =>
                     (labelTypeOf(fieldSymbol, fieldSymbol.name), metaTypeOf(fieldSymbol)).runtimeChecked match
                       case ('[type elemLabel <: String; elemLabel], '[type meta <: Meta; meta]) =>
-                        '{
+                        val expr = '{
                           new MadeFieldElem:
                             type MirroredType = fieldTpe
                             type MirroredLabel = elemLabel
@@ -540,10 +539,15 @@ object Made:
 
                             def default = ${ defaultOf[fieldTpe](index, fieldSymbol) }
                         }
+                        (expr = expr, names = (label = typeToString[elemLabel], original = fieldSymbol.name))
                   case (_, _) => wontHappen,
             )
 
-            elems match
+            elems.map(_.names).groupBy(_.label).foreach:
+              case (_, List(_)) =>
+              case (label, dupes) => report.error(s"${dupes.map(_.original).mkString(", ")} have the same @name: $label")
+
+            Expr.ofTupleFromSeq(elems.map(_.expr)) match
               case '{ type mirroredElems <: Tuple; $mirroredElemsExpr: mirroredElems } =>
                 '{
                   new Made.Product:
@@ -577,14 +581,14 @@ object Made:
                 }
               } =>
 
-            val elems = Expr.ofTupleFromSeq(traverseTuple(Type.of[mirroredElemTypes]).map:
+            val elems = traverseTuple(Type.of[mirroredElemTypes]).map:
               case '[subType] =>
                 val subType = TypeRepr.of[subType]
                 val subSymbol = if subType.termSymbol.isNoSymbol then subType.typeSymbol else subType.termSymbol
 
                 (labelTypeOf(subSymbol, subSymbol.name), metaTypeOf(subSymbol)).runtimeChecked match
                   case ('[type elemLabel <: String; elemLabel], '[type meta <: Meta; meta]) =>
-                    Type.of[subType] match
+                    val expr = Type.of[subType] match
                       case '[type s <: scala.Singleton; s] =>
                         '{
                           new MadeSubSingletonElem:
@@ -600,9 +604,14 @@ object Made:
                             type MirroredType = subType
                             type MirroredLabel = elemLabel
                             type Metadata = meta
-                        })
+                        }
+                    (expr = expr, names = (label = typeToString[elemLabel], original = subSymbol.name))
 
-            elems match
+            elems.map(_.names).groupBy(_.label).foreach:
+              case (_, List(_)) =>
+              case (label, dupes) => report.error(s"${dupes.map(_.original).mkString(", ")} have the same @name: $label")
+
+            Expr.ofTupleFromSeq(elems.map(_.expr)) match
               case '{
                     type mirroredElems <: Tuple; $mirroredElemsExpr: mirroredElems
                   } =>
@@ -722,4 +731,3 @@ object Made:
   private sealed trait TransparentWorkaround[T, U] extends Made.Transparent:
     final type MirroredType = T
     final type MirroredElemType = U
-
