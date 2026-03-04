@@ -63,6 +63,5 @@ def reportOnDuplicates(labels: Seq[(label: String, original: String)])(using quo
   import quotes.reflect.*
   labels
     .groupMap(_.label)(_.original)
-    .foreach:
-      case (_, List(_)) =>
-      case (label, originals) => report.error(s"${originals.mkString(", ")} have the same @name: $label")
+    .foreach: (label, originals) =>
+      if originals.sizeIs > 1 then report.error(s"${originals.mkString(", ")} have the same @name: $label")

@@ -526,7 +526,7 @@ object Made:
 
             val (exprs, names) = tSymbol.caseFields.zipWithIndex
               .zip(traverseTuple(Type.of[mirroredElemTypes]))
-              .foldLeft((List.empty[Expr[?]], List.empty[(label: String, original: String)])):
+              .foldLeft((Vector.empty[Expr[?]], Vector.empty[(label: String, original: String)])):
                 case ((exprs, names), ((fieldSymbol, index), '[fieldTpe])) =>
                   (labelTypeOf(fieldSymbol, fieldSymbol.name), metaTypeOf(fieldSymbol)).runtimeChecked match
                     case ('[type elemLabel <: String; elemLabel], '[type meta <: Meta; meta]) =>
@@ -538,7 +538,7 @@ object Made:
 
                           def default = ${ defaultOf[fieldTpe](index, fieldSymbol) }
                       }
-                      (expr :: exprs, (typeToString[elemLabel], fieldSymbol.name) :: names)
+                      (exprs :+ expr, names :+ (typeToString[elemLabel], fieldSymbol.name))
                 case _ => wontHappen
 
             reportOnDuplicates(names)
@@ -578,7 +578,7 @@ object Made:
               } =>
 
             val (exprs, names) = traverseTuple(Type.of[mirroredElemTypes])
-              .foldLeft((List.empty[Expr[?]], List.empty[(label: String, original: String)])):
+              .foldLeft((Vector.empty[Expr[?]], Vector.empty[(label: String, original: String)])):
                 case ((exprs, names), '[subType]) =>
                   val subType = TypeRepr.of[subType]
                   val subSymbol = if subType.termSymbol.isNoSymbol then subType.typeSymbol else subType.termSymbol
@@ -602,7 +602,7 @@ object Made:
                               type MirroredLabel = elemLabel
                               type Metadata = meta
                           }
-                      (expr :: exprs, (label = typeToString[elemLabel], original = subSymbol.name) :: names)
+                      (exprs :+ expr, names :+ (typeToString[elemLabel], subSymbol.name))
                 case _ => wontHappen
 
             reportOnDuplicates(names)
