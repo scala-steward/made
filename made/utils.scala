@@ -58,3 +58,11 @@ def getAnnotationImpl[A <: MetaAnnotation: Type, Self <: { type Metadata <: Meta
 
 def hasAnnotationImpl[A <: MetaAnnotation: Type, Self <: { type Metadata <: Meta }: Type](using quotes: Quotes)
   : Expr[Boolean] = Expr(getAnnotationImpl[A, Self].isExprOf[Some[A]])
+
+def reportOnDuplicates(labels: Seq[(label: String, original: String)])(using quotes: Quotes): Unit =
+  import quotes.reflect.*
+  labels
+    .groupMap(_.label)(_.original)
+    .foreach:
+      case (_, List(_)) =>
+      case (label, originals) => report.error(s"${originals.mkString(", ")} have the same @name: $label")

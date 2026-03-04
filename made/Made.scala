@@ -524,30 +524,26 @@ object Made:
                 }
               } =>
 
-            val elems = (
-              tSymbol.caseFields.zipWithIndex
-                .zip(traverseTuple(Type.of[mirroredElemTypes]))
-                .map:
-                  case ((fieldSymbol, index), '[fieldTpe]) =>
-                    (labelTypeOf(fieldSymbol, fieldSymbol.name), metaTypeOf(fieldSymbol)).runtimeChecked match
-                      case ('[type elemLabel <: String; elemLabel], '[type meta <: Meta; meta]) =>
-                        val expr = '{
-                          new MadeFieldElem:
-                            type MirroredType = fieldTpe
-                            type MirroredLabel = elemLabel
-                            type Metadata = meta
+            val (exprs, names) = tSymbol.caseFields.zipWithIndex
+              .zip(traverseTuple(Type.of[mirroredElemTypes]))
+              .foldLeft((List.empty[Expr[?]], List.empty[(label: String, original: String)])):
+                case ((exprs, names), ((fieldSymbol, index), '[fieldTpe])) =>
+                  (labelTypeOf(fieldSymbol, fieldSymbol.name), metaTypeOf(fieldSymbol)).runtimeChecked match
+                    case ('[type elemLabel <: String; elemLabel], '[type meta <: Meta; meta]) =>
+                      val expr = '{
+                        new MadeFieldElem:
+                          type MirroredType = fieldTpe
+                          type MirroredLabel = elemLabel
+                          type Metadata = meta
 
-                            def default = ${ defaultOf[fieldTpe](index, fieldSymbol) }
-                        }
-                        (expr = expr, names = (label = typeToString[elemLabel], original = fieldSymbol.name))
-                  case (_, _) => wontHappen,
-            )
+                          def default = ${ defaultOf[fieldTpe](index, fieldSymbol) }
+                      }
+                      (expr :: exprs, (typeToString[elemLabel], fieldSymbol.name) :: names)
+                case _ => wontHappen
 
-            elems.map(_.names).groupBy(_.label).foreach:
-              case (_, List(_)) =>
-              case (label, dupes) => report.error(s"${dupes.map(_.original).mkString(", ")} have the same @name: $label")
+            reportOnDuplicates(names)
 
-            Expr.ofTupleFromSeq(elems.map(_.expr)) match
+            Expr.ofTupleFromSeq(exprs) match
               case '{ type mirroredElems <: Tuple; $mirroredElemsExpr: mirroredElems } =>
                 '{
                   new Made.Product:
@@ -581,40 +577,38 @@ object Made:
                 }
               } =>
 
-            val elems = traverseTuple(Type.of[mirroredElemTypes]).map:
-              case '[subType] =>
-                val subType = TypeRepr.of[subType]
-                val subSymbol = if subType.termSymbol.isNoSymbol then subType.typeSymbol else subType.termSymbol
+            val (exprs, names) = traverseTuple(Type.of[mirroredElemTypes])
+              .foldLeft((List.empty[Expr[?]], List.empty[(label: String, original: String)])):
+                case ((exprs, names), '[subType]) =>
+                  val subType = TypeRepr.of[subType]
+                  val subSymbol = if subType.termSymbol.isNoSymbol then subType.typeSymbol else subType.termSymbol
 
-                (labelTypeOf(subSymbol, subSymbol.name), metaTypeOf(subSymbol)).runtimeChecked match
-                  case ('[type elemLabel <: String; elemLabel], '[type meta <: Meta; meta]) =>
-                    val expr = Type.of[subType] match
-                      case '[type s <: scala.Singleton; s] =>
-                        '{
-                          new MadeSubSingletonElem:
-                            type MirroredType = s
-                            type MirroredLabel = elemLabel
-                            type Metadata = meta
+                  (labelTypeOf(subSymbol, subSymbol.name), metaTypeOf(subSymbol)).runtimeChecked match
+                    case ('[type elemLabel <: String; elemLabel], '[type meta <: Meta; meta]) =>
+                      val expr = Type.of[subType] match
+                        case '[type s <: scala.Singleton; s] =>
+                          '{
+                            new MadeSubSingletonElem:
+                              type MirroredType = s
+                              type MirroredLabel = elemLabel
+                              type Metadata = meta
 
-                            def value: s = singleValueOf[s]
-                        }
-                      case '[s] =>
-                        '{
-                          new MadeSubElem:
-                            type MirroredType = subType
-                            type MirroredLabel = elemLabel
-                            type Metadata = meta
-                        }
-                    (expr = expr, names = (label = typeToString[elemLabel], original = subSymbol.name))
+                              def value: s = singleValueOf[s]
+                          }
+                        case '[s] =>
+                          '{
+                            new MadeSubElem:
+                              type MirroredType = subType
+                              type MirroredLabel = elemLabel
+                              type Metadata = meta
+                          }
+                      (expr :: exprs, (label = typeToString[elemLabel], original = subSymbol.name) :: names)
+                case _ => wontHappen
 
-            elems.map(_.names).groupBy(_.label).foreach:
-              case (_, List(_)) =>
-              case (label, dupes) => report.error(s"${dupes.map(_.original).mkString(", ")} have the same @name: $label")
+            reportOnDuplicates(names)
 
-            Expr.ofTupleFromSeq(elems.map(_.expr)) match
-              case '{
-                    type mirroredElems <: Tuple; $mirroredElemsExpr: mirroredElems
-                  } =>
+            Expr.ofTupleFromSeq(exprs) match
+              case '{ type mirroredElems <: Tuple; $mirroredElemsExpr: mirroredElems } =>
                 '{
                   new Made.Sum:
                     type MirroredType = T
