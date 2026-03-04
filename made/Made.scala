@@ -76,6 +76,25 @@ sealed trait Made:
   def mirroredElems: MirroredElems
   def generatedElems: GeneratedElems
 
+  /**
+   * Returns `true` if the mirror's `Metadata` type member contains an annotation of type `A`.
+   *
+   * Transparent inline - resolved entirely at compile time, no runtime cost.
+   * `A` must extend [[made.annotation.MetaAnnotation]].
+   */
+  transparent inline def hasAnnotation[A <: MetaAnnotation]: Boolean = ${ hasAnnotationImpl[A, this.type] }
+
+  /**
+   * Returns `Some(annotation)` if the mirror's `Metadata` type member contains an annotation
+   * of type `A`, `None` otherwise.
+   *
+   * The returned annotation instance provides access to annotation parameters
+   * (e.g., `getAnnotation[JsonName].get.value`). Inline - resolved at compile time.
+   * `A` must extend [[made.annotation.MetaAnnotation]].
+   */
+  inline def getAnnotation[A <: MetaAnnotation]: Option[A] = ${ getAnnotationImpl[A, this.type] }
+
+
 /**
  * Base type for elements within a [[Made]] mirror's `MirroredElems` tuple.
  *
@@ -118,6 +137,24 @@ sealed trait MadeElem:
    * (unlike [[Made]], which has [[made.annotation.hasAnnotation]] and [[made.annotation.getAnnotation]]).
    */
   type Metadata <: Meta
+
+  /**
+   * Returns `true` if the mirror's `Metadata` type member contains an annotation of type `A`.
+   *
+   * Transparent inline - resolved entirely at compile time, no runtime cost.
+   * `A` must extend [[made.annotation.MetaAnnotation]].
+   */
+  transparent inline def hasAnnotation[A <: MetaAnnotation]: Boolean = ${ hasAnnotationImpl[A, this.type] }
+
+  /**
+   * Returns `Some(annotation)` if the mirror's `Metadata` type member contains an annotation
+   * of type `A`, `None` otherwise.
+   *
+   * The returned annotation instance provides access to annotation parameters
+   * (e.g., `getAnnotation[JsonName].get.value`). Inline - resolved at compile time.
+   * `A` must extend [[made.annotation.MetaAnnotation]`.
+   */
+  inline def getAnnotation[A <: MetaAnnotation]: Option[A] = ${ getAnnotationImpl[A, this.type] }
 
 /**
  * Element representing a constructor parameter in a product type mirror.
@@ -678,9 +715,11 @@ object Made:
 
     /** Wraps a value into the transparent type. */
     def wrap(value: MirroredElemType): MirroredType
+
     final def generatedElems: GeneratedElems = EmptyTuple
 
   // workaround for https://github.com/scala/scala3/issues/25245
   private sealed trait TransparentWorkaround[T, U] extends Made.Transparent:
     final type MirroredType = T
     final type MirroredElemType = U
+

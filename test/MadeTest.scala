@@ -319,6 +319,89 @@ class MadeTest extends munit.FunSuite:
     assert(result == Box("content"))
   }
 
+  test("MadeElem.hasAnnotation on generated elem finds @generated") {
+    val mirror = Made.derived[HasGenerated]
+    val gen *: EmptyTuple = mirror.generatedElems
+
+    assert(gen.hasAnnotation[generated])
+    assert(!gen.hasAnnotation[Annotation1])
+  }
+
+  test("MadeElem.getAnnotation on generated elem returns Some for @generated") {
+    val mirror = Made.derived[HasGenerated]
+    val gen *: EmptyTuple = mirror.generatedElems
+
+    assert(gen.getAnnotation[generated].isDefined)
+    assert(gen.getAnnotation[Annotation1].isEmpty)
+  }
+
+  test("MadeElem.hasAnnotation returns false for unannotated field") {
+    val mirror = Made.derived[SimpleCaseClass]
+    val id *: name *: EmptyTuple = mirror.mirroredElems
+
+    assert(!id.hasAnnotation[Annotation1])
+    assert(!id.hasAnnotation[generated])
+    assert(!name.hasAnnotation[Annotation1])
+  }
+
+  test("MadeElem.getAnnotation returns None for unannotated field") {
+    val mirror = Made.derived[SimpleCaseClass]
+    val id *: name *: EmptyTuple = mirror.mirroredElems
+
+    assert(id.getAnnotation[Annotation1].isEmpty)
+    assert(name.getAnnotation[Annotation1].isEmpty)
+  }
+
+  test("MadeElem.hasAnnotation with custom annotation on generated member") {
+    val mirror = Made.derived[HasCustomAnnotatedGenerated]
+    val gen *: EmptyTuple = mirror.generatedElems
+
+    assert(gen.hasAnnotation[generated])
+    assert(gen.hasAnnotation[Annotation1])
+    assert(!gen.hasAnnotation[Annotation2])
+  }
+
+  test("MadeElem.getAnnotation with custom annotation on generated member") {
+    val mirror = Made.derived[HasCustomAnnotatedGenerated]
+    val gen *: EmptyTuple = mirror.generatedElems
+
+    assert(gen.getAnnotation[generated].isDefined)
+    assert(gen.getAnnotation[Annotation1].isDefined)
+    assert(gen.getAnnotation[Annotation2].isEmpty)
+  }
+
+  test("MadeElem.getAnnotation retrieves parametrized annotation from generated member") {
+    val mirror = Made.derived[HasParamAnnotatedGenerated]
+    val gen *: EmptyTuple = mirror.generatedElems
+
+    val annot = gen.getAnnotation[ParamAnnotation].get
+    assert(annot.value == "gen-param")
+  }
+
+  test("MadeElem.hasAnnotation on multiple generated elems") {
+    val mirror = Made.derived[HasMultipleGenerated]
+    val g1 *: g2 *: EmptyTuple = mirror.generatedElems
+
+    assert(g1.hasAnnotation[generated])
+    assert(g1.hasAnnotation[Annotation1])
+    assert(!g1.hasAnnotation[Annotation2])
+
+    assert(g2.hasAnnotation[generated])
+    assert(!g2.hasAnnotation[Annotation1])
+    assert(g2.hasAnnotation[Annotation2])
+  }
+
+  test("MadeElem.getAnnotation on multiple generated elems") {
+    val mirror = Made.derived[HasMultipleGenerated]
+    val g1 *: g2 *: EmptyTuple = mirror.generatedElems
+
+    assert(g1.getAnnotation[Annotation1].isDefined)
+    assert(g1.getAnnotation[Annotation2].isEmpty)
+
+    assert(g2.getAnnotation[Annotation1].isEmpty)
+    assert(g2.getAnnotation[Annotation2].isDefined)
+  }
+
   test("inherit name") {
     val mirror = Made.derived[InheritedName]
     val fieldElem *: EmptyTuple = mirror.mirroredElems
@@ -369,3 +452,13 @@ trait TraitWithName:
   def field: String
 
 case class InheritedName(field: String) extends TraitWithName
+
+case class HasCustomAnnotatedGenerated(x: Int):
+  @generated @Annotation1 def tag: String = x.toString
+
+case class HasParamAnnotatedGenerated(x: Int):
+  @generated @ParamAnnotation("gen-param") def info: String = s"x=$x"
+
+case class HasMultipleGenerated(x: Int):
+  @generated @Annotation1 def first: String = x.toString
+  @generated @Annotation2 def second: Int = x * 2

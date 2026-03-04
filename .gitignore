@@ -44,6 +44,8 @@ build/
 .bsp/
 .scala-build/
 .scala-doc/
+.scoverage/*
+!.scoverage/report.sc
 
 ### AI ###
 .claude/
