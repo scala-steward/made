@@ -132,8 +132,6 @@ sealed trait MadeElem:
 
   /**
    * Annotation metadata on this element, represented as an `AnnotatedType` chain around [[Meta]].
-   * Accessible at the type level but has no runtime query convenience methods
-   * (unlike [[Made]], which has [[made.annotation.hasAnnotation]] and [[made.annotation.getAnnotation]]).
    */
   type Metadata <: Meta
 
