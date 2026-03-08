@@ -21,14 +21,14 @@ sum, singleton), and finally the `inline def derived` dispatcher that ties them 
 
 The examples throughout this guide use a small set of domain types. Product derivation uses `User`.
 
-```scala sc-name:user
+```scala 3 sc-name:user
 case class User(name: String, age: Int)
 ```
 
 The transparent wrapper example uses `Email`, a single-field case class annotated with `@transparent` so that Made
 derives a `Made.Transparent` mirror instead of `Made.Product`.
 
-```scala sc-name:email
+```scala 3 sc-name:email
 import made.annotation.transparent
 
 @transparent
@@ -37,7 +37,7 @@ case class Email(value: String)
 
 Sum type examples use `Shape` with mixed singleton and parameterised subtypes.
 
-```scala sc-name:shape
+```scala 3 sc-name:shape
 sealed trait Shape
 
 case class Circle(radius: Double) extends Shape
@@ -49,7 +49,7 @@ case object Point extends Shape
 
 Singleton mirrors use `Origin`, a standalone case object.
 
-```scala sc-name:origin
+```scala 3 sc-name:origin
 case object Origin
 ```
 
@@ -60,7 +60,7 @@ case object Origin
 
 Primitive instances handle the leaf types that product and sum derivation will recurse into.
 
-```scala sc-name:show-trait
+```scala 3 sc-name:show-trait
 trait Show[T]:
   def show(value: T): String
 
@@ -100,7 +100,7 @@ The steps are:
 Given the imports `import made.*`, along with the `Show` trait and domain types defined above, the product derivation
 function is:
 
-```scala sc-name:derive-product sc-compile-with:show-trait
+```scala 3 sc-name:derive-product sc-compile-with:show-trait
 import made.*
 
 inline def deriveProduct[T <: Product](m: Made.ProductOf[T]): Show[T] = value =>
@@ -134,7 +134,7 @@ Transparent derivation unwraps the value and delegates to the underlying type's 
 `Show` instance for the single underlying type at compile time. Because the type is transparent, the wrapper name is
 omitted - `Email("alice@example.com")` shows as `alice@example.com`, not `Email(alice@example.com)`.
 
-```scala sc-name:derive-transparent sc-compile-with:show-trait
+```scala 3 sc-name:derive-transparent sc-compile-with:show-trait
 import made.*
 
 inline def deriveTransparent[T](m: Made.TransparentOf[T]): Show[T] = value =>
@@ -157,7 +157,7 @@ The function below takes a `Made.SumOf[T]` mirror and uses `compiletime.summonAl
 whose `unapply` matches the value - this handles both singleton subtypes (case objects) and parameterised subtypes
 (case classes) uniformly.
 
-```scala sc-name:derive-sum sc-compile-with:show-trait
+```scala 3 sc-name:derive-sum sc-compile-with:show-trait
 import made.*
 import scala.reflect.ClassTag
 
@@ -185,7 +185,7 @@ fields or subtypes to iterate. The singleton instance is available via `value`.
 For `Show`, a singleton simply outputs its type label. Sum derivation already handles singletons via `ClassTag`
 matching, but standalone singleton mirrors let you extract the label directly.
 
-```scala sc-name:derive-singleton sc-compile-with:show-trait
+```scala 3 sc-name:derive-singleton sc-compile-with:show-trait
 import made.*
 
 inline def deriveSingleton[T](m: Made.SingletonOf[T]): Show[T] = _ => compiletime.constValue[m.Label]
@@ -205,7 +205,7 @@ mirror subtype at the inline expansion site, so these pattern matches are exhaus
 The `derives` clause on a type definition triggers this: writing `case class User(...) derives Show` causes the compiler
 to look for `Show.derived`, passing the `Made.Of[User]` instance as the using parameter.
 
-```scala sc-name:show-derived sc:nocompile
+```scala 3 sc-name:show-derived sc:nocompile
 inline def derived[T](using m: Made.Of[T]): Show[T] = inline m match
   case m: Made.ProductOf[T & Product] => deriveProduct(m).asInstanceOf[Show[T]]
   case m: Made.SumOf[T] => deriveSum(m)
@@ -219,7 +219,7 @@ The product branch uses `T & Product` as the type bound because `Made.ProductOf[
 With this dispatcher in place, calling `Show.derived[User]` passes `Made.Of[User]` (which is a `Made.ProductOf[T]` at
 runtime) and the `inline match` routes to `deriveProduct`.
 
-```scala sc:nocompile
+```scala 3 sc:nocompile
 given Show[Circle] = Show.derived[Circle]
 given Show[Rectangle] = Show.derived[Rectangle]
 given Show[Point.type] = Show.derived[Point.type]
@@ -239,7 +239,7 @@ assert(shapeShow.show(Rectangle(2.0, 5.0)) == "Rectangle(width = 2.0, height = 5
 Note that sum derivation requires `Show` instances for each subtype to be in scope before deriving the sum itself.
 The `given` declarations for `Circle`, `Rectangle`, and `Point.type` provide these.
 
-```scala sc:nocompile
+```scala 3 sc:nocompile
 given Show[Circle] = Show.derived[Circle]
 given Show[Rectangle] = Show.derived[Rectangle]
 given Show[Point.type] = Show.derived[Point.type]
