@@ -53,7 +53,7 @@ extension [Ls <: Tuple](l: { type ElemLabels = Ls })
   Expr(getAnnotationImpl[A, M].isExprOf[Some[A]])
 
 extension [Tup <: Tuple](tuple: Tup)
-  def toArrayOf[T: ClassTag]: Array[T] = tuple match
+  def toArrayOf[T: ClassTag](using Tup containsOnly T): Array[T] = tuple match
     case EmptyTuple => Array.empty[T]
     case self: Product =>
       val arr = new Array[T](self.productArity)
