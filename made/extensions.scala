@@ -4,6 +4,7 @@ import made.annotation.MetaAnnotation
 
 import scala.annotation.{publicInBinary, tailrec}
 import scala.quoted.*
+import scala.reflect.ClassTag
 
 extension [M <: Meta](self: { type Metadata = M })
   /**
@@ -50,3 +51,14 @@ extension [Ls <: Tuple](l: { type ElemLabels = Ls })
 @publicInBinary private def hasAnnotationImpl[A <: MetaAnnotation: Type, M <: Meta: Type](using quotes: Quotes)
   : Expr[Boolean] =
   Expr(getAnnotationImpl[A, M].isExprOf[Some[A]])
+
+extension [Tup <: Tuple](tuple: Tup)
+  def toArrayOf[T: ClassTag]: Array[T] = tuple match
+    case EmptyTuple => Array.empty[T]
+    case self: Product =>
+      val arr = new Array[T](self.productArity)
+      var i = 0
+      while i < arr.length do
+        arr(i) = self.productElement(i).asInstanceOf[T]
+        i += 1
+      arr
