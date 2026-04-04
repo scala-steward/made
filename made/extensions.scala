@@ -5,6 +5,7 @@ import made.annotation.MetaAnnotation
 import scala.annotation.{publicInBinary, tailrec}
 import scala.quoted.*
 import scala.reflect.ClassTag
+import made.tuple.containsOnly
 
 extension [M <: Meta](self: { type Metadata = M })
   /**

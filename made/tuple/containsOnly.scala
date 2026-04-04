@@ -1,3 +1,5 @@
+package made.tuple
+
 opaque infix type containsOnly[Tup <: Tuple, T] = Boolean
 
 object containsOnly:
