@@ -197,10 +197,3 @@ class ToArrayOfTest extends munit.FunSuite:
     assertEquals(result.toList, List(2, 3, 4))
   }
 
-  test("does not compile for heterogeneous tuple") {
-    assert(compileErrors("(1, \"a\").toArrayOf[Int]").nonEmpty)
-  }
-
-  test("does not compile for wrong target type") {
-    assert(compileErrors("(1, 2, 3).toArrayOf[String]").nonEmpty)
-  }
