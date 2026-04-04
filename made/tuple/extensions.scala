@@ -11,12 +11,14 @@ extension (tup: Tuple)
     Tuple.fromArray(Array.range(0, tup.size)).asInstanceOf[Indices[tup.type]]
 
   // todo: we'd like o avoid the second type param
-  inline def mapOnly[T](using tup.type containsOnly T): MapOnly[T, tup.type] = MapOnly[T, tup.type](tup)
+  inline def mapOnly[T](using tup.type containsOnly T): MapOnly[T, tup.type] = tup
 
-//todo: Tup may be replaced with tracked val some day
-final class MapOnly[T, Tup <: Tuple](val tup: Tup) extends AnyVal:
-  inline def apply[F[_ <: T]](inline f: [t <: T] => t => F[t]): Map[tup.type, [X] =>> F[X & T]] =
-    tup.map[[X] =>> F[X & T]]([t] => (t: t) => f(t.asInstanceOf[t & T]))
+opaque type MapOnly[T, Tup <: Tuple] = Tup
+
+object MapOnly:
+  extension [T, Tup <: Tuple](mapOnly: MapOnly[T, Tup])
+    inline def apply[F[_ <: T]](inline f: [t <: T] => t => F[t]): Map[Tup, [X] =>> F[X & T]] =
+      (mapOnly: Tup).map[[X] =>> F[X & T]]([t] => (t: t) => f(t.asInstanceOf[t & T]))
 
 type Indices[Tup <: Tuple] <: Tuple = Tup match
   case EmptyTuple => EmptyTuple
