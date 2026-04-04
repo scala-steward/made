@@ -10,3 +10,5 @@ object containsOnly:
     case _ => false
 
   inline given [Tup <: Tuple, T] => (Loop[Tup, T] =:= true) => containsOnly[Tup, T] = true
+  // todo: i dont know which one is better
+//  inline given [Tup <: Tuple, T] => (Tuple.Union[Tup] <:< T) => containsOnly[Tup, T] = true

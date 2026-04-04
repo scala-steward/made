@@ -11,7 +11,10 @@ extension (tup: Tuple)
     Tuple.fromArray(Array.range(0, tup.size)).asInstanceOf[Indices[tup.type]]
 
   // todo: we'd like o avoid the second type param
-  inline def mapOnly[T, F[_ <: T]](f: [t <: T] => t => F[t]): Map[tup.type, [X] =>> F[X & T]] =
+  inline def mapOnly[T, F[_ <: T]](
+    f: [t <: T] => t => F[t],
+  )(using tup.type containsOnly T,
+  ): Map[tup.type, [X] =>> F[X & T]] =
     tup.map([t] => (t: t) => f(t.asInstanceOf[t & T]))
 
 type Indices[Tup <: Tuple] <: Tuple = Tup match
