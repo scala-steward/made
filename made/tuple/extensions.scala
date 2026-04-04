@@ -1,13 +1,18 @@
 package made.tuple
 
-import scala.compiletime.ops.int.S
 import scala.compiletime.ops.boolean.||
+import scala.compiletime.ops.int.S
+import scala.Tuple.Map
 
-extension [Tup <: Tuple](tup: Tup)
+extension (tup: Tuple)
   inline def foreach(f: [t] => t => Unit): Unit = tup.map[[X] =>> Unit](f)
 
-  inline def indices: Indices[Tup] =
-    Tuple.fromArray(Array.range(0, tup.size)).asInstanceOf[Indices[Tup]]
+  inline def indices: Indices[tup.type] =
+    Tuple.fromArray(Array.range(0, tup.size)).asInstanceOf[Indices[tup.type]]
+
+  // todo: we'd like o avoid the second type param
+  inline def mapOnly[T, F[_ <: T]](f: [t <: T] => t => F[t]): Map[tup.type, [X] =>> F[X & T]] =
+    tup.map([t] => (t: t) => f(t.asInstanceOf[t & T]))
 
 type Indices[Tup <: Tuple] <: Tuple = Tup match
   case EmptyTuple => EmptyTuple
