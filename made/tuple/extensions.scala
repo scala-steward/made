@@ -7,10 +7,8 @@ import scala.Tuple.Map
 extension (tup: Tuple)
   inline def foreach(f: [t] => t => Unit): Unit = tup.map[[X] =>> Unit](f)
 
-  inline def indices: Indices[tup.type] =
-    Tuple.fromArray(Array.range(0, tup.size)).asInstanceOf[Indices[tup.type]]
+  inline def indices: Indices[tup.type] = Tuple.fromArray(Array.range(0, tup.size)).asInstanceOf[Indices[tup.type]]
 
-  // todo: we'd like o avoid the second type param
   inline def mapOnly[T](using tup.type containsOnly T): MapOnly[T, tup.type] = tup
 
 opaque type MapOnly[T, Tup <: Tuple] = Tup
