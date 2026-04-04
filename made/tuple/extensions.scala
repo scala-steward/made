@@ -11,11 +11,14 @@ extension (tup: Tuple)
     Tuple.fromArray(Array.range(0, tup.size)).asInstanceOf[Indices[tup.type]]
 
   // todo: we'd like o avoid the second type param
-  inline def mapOnly[T, F[_ <: T]](
+  inline def mapOnly[T]: MapOnly[T, tup.type] = MapOnly[T, tup.type](tup)
+
+class MapOnly[T, Tup <: Tuple](val tup: Tup):
+  inline def apply[F[_ <: T]](
     f: [t <: T] => t => F[t],
-  )(using tup.type containsOnly T,
+  )(using Tup containsOnly T,
   ): Map[tup.type, [X] =>> F[X & T]] =
-    tup.map([t] => (t: t) => f(t.asInstanceOf[t & T]))
+    tup.map[[X] =>> F[X & T]]([t] => (t: t) => f(t.asInstanceOf[t & T]).asInstanceOf[([X] =>> F[X & T])[t]])
 
 type Indices[Tup <: Tuple] <: Tuple = Tup match
   case EmptyTuple => EmptyTuple
