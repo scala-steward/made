@@ -1,6 +1,8 @@
-package made.tuple
+package made
 
 class IndicesTest extends munit.FunSuite:
+
+  // --- runtime tests ---
 
   test("empty tuple") {
     val result = EmptyTuple.indices
@@ -32,6 +34,32 @@ class IndicesTest extends munit.FunSuite:
     assertEquals(result, (0, 1, 2))
   }
 
+  test("two element tuple") {
+    val result = (true, false).indices
+    assertEquals(result, (0, 1))
+  }
+
+  test("indices values are sequential starting from 0") {
+    val result = ("a", "b", "c", "d").indices
+    val asList = result.toList
+    assertEquals(asList, List(0, 1, 2, 3))
+  }
+
+  test("indices of large tuple") {
+    val result = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10).indices
+    assertEquals(result, (0, 1, 2, 3, 4, 5, 6, 7, 8, 9))
+  }
+
+  test("indices result has same arity as input") {
+    val tuple = ("a", "b", "c")
+    assertEquals(tuple.indices.size, 3)
+  }
+
+  test("indices of homogeneous tuple") {
+    val result = (1, 2, 3).indices
+    assertEquals(result, (0, 1, 2))
+  }
+
   // --- type-level tests ---
 
   test("Indices of EmptyTuple is EmptyTuple") {
@@ -57,4 +85,17 @@ class IndicesTest extends munit.FunSuite:
   test("Indices element types are literal Int singletons") {
     summon[Indices[(String, Boolean, Double)] <:< (0, 1, 2)]
     summon[(0, 1, 2) <:< Indices[(String, Boolean, Double)]]
+  }
+
+  test("Indices of two element tuple at type level") {
+    summon[Indices[(Int, String)] <:< (0, 1)]
+    summon[(0, 1) <:< Indices[(Int, String)]]
+  }
+
+  test("IndicesAux starts from given offset") {
+    summon[IndicesAux[(String, Int), 3] <:< (3, 4)]
+  }
+
+  test("IndicesAux of EmptyTuple is EmptyTuple") {
+    summon[IndicesAux[EmptyTuple, 5] =:= EmptyTuple]
   }

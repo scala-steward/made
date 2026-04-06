@@ -161,6 +161,16 @@ class LabelTest extends munit.FunSuite:
     assertEquals(labels._3, z.label)
   }
 
+  // --- elem label from mapOnly matches elemLabels ---
+
+  test("elem label from mapOnly matches elemLabels") {
+    val mirror = Made.derived[LabelProduct]
+    val labels =
+      mirror.elems.mapOnly[MadeElem { type Label <: String }]([m <: MadeElem { type Label <: String }] => m => m.label)
+    val elemLabels = mirror.elemLabels
+    assertEquals(labels, elemLabels)
+  }
+
 // --- Fixtures ---
 
 @name("custom")
@@ -180,5 +190,6 @@ enum LabelNamedEnum:
 
 sealed trait LabelMixed
 object LabelMixed:
-  case object Leaf extends LabelMixed
   case class Branch(left: LabelMixed, right: LabelMixed) extends LabelMixed
+
+  case object Leaf extends LabelMixed

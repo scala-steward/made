@@ -1,22 +1,29 @@
-package made.tuple
+package made
 
 import scala.compiletime.ops.boolean.||
 import scala.compiletime.ops.int.S
-import scala.Tuple.Map
+import scala.reflect.ClassTag
 
 extension (tup: Tuple)
   inline def foreach(f: [t] => t => Unit): Unit = tup.map[[X] =>> Unit](f)
 
   inline def indices: Indices[tup.type] = Tuple.fromArray(Array.range(0, tup.size)).asInstanceOf[Indices[tup.type]]
 
-  inline def mapOnly[T](using tup.type containsOnly T): MapOnly[T, tup.type] = tup
+  inline def hasDuplicates: HasDuplicates[tup.type] = compiletime.constValue[HasDuplicates[tup.type]]
 
-opaque type MapOnly[T, Tup <: Tuple] = Tup
+  inline def mapOnly[T](using tup.type containsOnly T)[F[_ <: T]](inline f: [t <: T] => t => F[t])
+    : Tuple.Map[tup.type, [X] =>> F[X & T]] =
+    tup.map[[X] =>> F[X & T]]([t] => (t: t) => f(t.asInstanceOf[t & T]))
 
-object MapOnly:
-  extension [T, Tup <: Tuple](mapOnly: MapOnly[T, Tup])
-    inline def apply[F[_ <: T]](inline f: [t <: T] => t => F[t]): Map[Tup, [X] =>> F[X & T]] =
-      (mapOnly: Tup).map[[X] =>> F[X & T]]([t] => (t: t) => f(t.asInstanceOf[t & T]))
+  def toArrayOf[T: ClassTag](using tup.type containsOnly T): Array[T] = tup match
+    case EmptyTuple => Array.empty[T]
+    case self: Product =>
+      val arr = new Array[T](self.productArity)
+      var i = 0
+      while i < arr.length do
+        arr(i) = self.productElement(i).asInstanceOf[T]
+        i += 1
+      arr
 
 type Indices[Tup <: Tuple] <: Tuple = Tup match
   case EmptyTuple => EmptyTuple
