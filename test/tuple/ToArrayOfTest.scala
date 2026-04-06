@@ -196,4 +196,3 @@ class ToArrayOfTest extends munit.FunSuite:
     val result = tuple.drop(1).take(3).toArrayOf[Int]
     assertEquals(result.toList, List(2, 3, 4))
   }
-

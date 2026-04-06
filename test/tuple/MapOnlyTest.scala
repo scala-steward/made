@@ -34,7 +34,8 @@ class MapOnlyTest extends munit.FunSuite:
   }
 
   test("mapOnly preserves element order") {
-    val result: (List[Int], List[Int], List[Int], List[Int]) = (10, 20, 30, 40).mapOnly[Int]([t <: Int] => (x: t) => List(x))
+    val result: (List[Int], List[Int], List[Int], List[Int]) =
+      (10, 20, 30, 40).mapOnly[Int]([t <: Int] => (x: t) => List(x))
     assertEquals(result, (List(10), List(20), List(30), List(40)))
   }
 
@@ -43,7 +44,8 @@ class MapOnlyTest extends munit.FunSuite:
     case class Dog(name: String) extends Animal
     case class Cat(name: String) extends Animal
 
-    val result: (Option[Animal], Option[Animal]) = (Dog("Rex"), Cat("Whiskers")).mapOnly[Animal]([t <: Animal] => (x: t) => Option(x))
+    val result: (Option[Animal], Option[Animal]) =
+      (Dog("Rex"), Cat("Whiskers")).mapOnly[Animal]([t <: Animal] => (x: t) => Option(x))
     assertEquals(result, (Some(Dog("Rex")), Some(Cat("Whiskers"))))
   }
 
@@ -53,7 +55,8 @@ class MapOnlyTest extends munit.FunSuite:
   }
 
   test("mapOnly for drop") {
-    val result: (Option[Int], Option[Int], Option[Int]) = (1, 2, 3, 4, 5).drop(2).mapOnly[Int]([t <: Int] => (x: t) => Option(x))
+    val result: (Option[Int], Option[Int], Option[Int]) =
+      (1, 2, 3, 4, 5).drop(2).mapOnly[Int]([t <: Int] => (x: t) => Option(x))
     assertEquals(result, (Some(3), Some(4), Some(5)))
   }
 
@@ -73,7 +76,9 @@ class MapOnlyTest extends munit.FunSuite:
   }
 
   test("mapOnly for concat") {
-    val result: (Option[Int], Option[Int], Option[Int], Option[Int]) = ((1, 2) ++ (3, 4)).mapOnly[Int]([t <: Int] => (x: t) => Option(x))
+    val result: (Option[Int], Option[Int], Option[Int], Option[Int]) = ((1, 2) ++ (3, 4)).mapOnly[Int]([t <: Int] =>
+      (x: t) => Option(x),
+    )
     assertEquals(result, (Some(1), Some(2), Some(3), Some(4)))
   }
 
@@ -84,7 +89,8 @@ class MapOnlyTest extends munit.FunSuite:
   }
 
   test("mapOnly for chained tail") {
-    val result: (Option[Int], Option[Int], Option[Int]) = (1, 2, 3, 4, 5).tail.tail.mapOnly[Int]([t <: Int] => (x: t) => Option(x))
+    val result: (Option[Int], Option[Int], Option[Int]) =
+      (1, 2, 3, 4, 5).tail.tail.mapOnly[Int]([t <: Int] => (x: t) => Option(x))
     assertEquals(result, (Some(3), Some(4), Some(5)))
   }
 
@@ -94,6 +100,7 @@ class MapOnlyTest extends munit.FunSuite:
   }
 
   test("mapOnly for drop then take") {
-    val result: (Option[Int], Option[Int]) = (1, 2, 3, 4, 5).drop(1).take(2).mapOnly[Int]([t <: Int] => (x: t) => Option(x))
+    val result: (Option[Int], Option[Int]) =
+      (1, 2, 3, 4, 5).drop(1).take(2).mapOnly[Int]([t <: Int] => (x: t) => Option(x))
     assertEquals(result, (Some(2), Some(3)))
   }

@@ -1,6 +1,7 @@
 package made
 
 import made.containsOnly.given
+
 import scala.language.implicitConversions
 
 class ContainsOnlyTest extends munit.FunSuite:
@@ -294,7 +295,6 @@ class ContainsOnlyTest extends munit.FunSuite:
 //    val result: Tuple = tuple ++ (3, 4)
 //    assertEquals(result.toList, List(1, 2, 3, 4))
 //  }
-
 
   test("evidence on single element") {
     val tuple: Tuple = Tuple1(42)
