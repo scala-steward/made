@@ -137,22 +137,22 @@ class ContainsOnlyTest extends munit.FunSuite:
   // --- integration with mapOnly ---
 
   test("mapOnly compiles for homogeneous Int tuple") {
-    val result = (1, 2, 3).mapOnly[Int]([t <: Int] => (x: t) => List(x))
+    val result = (1, 2, 3).mapAs[Int]([t <: Int] => (x: t) => List(x))
     assertEquals(result, (List(1), List(2), List(3)))
   }
 
   test("mapOnly compiles for homogeneous String tuple") {
-    val result = ("a", "b").mapOnly[String]([t <: String] => (x: t) => Option(x))
+    val result = ("a", "b").mapAs[String]([t <: String] => (x: t) => Option(x))
     assertEquals(result, (Some("a"), Some("b")))
   }
 
   test("mapOnly compiles for empty tuple") {
-    val result = EmptyTuple.mapOnly[Int]([t <: Int] => (x: t) => List(x))
+    val result = EmptyTuple.mapAs[Int]([t <: Int] => (x: t) => List(x))
     assertEquals(result, EmptyTuple)
   }
 
   test("mapOnly compiles for single element") {
-    val result = Tuple1(42).mapOnly[Int]([t <: Int] => (x: t) => Option(x))
+    val result = Tuple1(42).mapAs[Int]([t <: Int] => (x: t) => Option(x))
     assertEquals(result, Tuple1(Some(42)))
   }
 
@@ -161,7 +161,7 @@ class ContainsOnlyTest extends munit.FunSuite:
     case class Dog(name: String) extends Animal
     case class Cat(name: String) extends Animal
 
-    val result = (Dog("Rex"), Cat("Whiskers")).mapOnly[Animal]([t <: Animal] => (x: t) => Option(x))
+    val result = (Dog("Rex"), Cat("Whiskers")).mapAs[Animal]([t <: Animal] => (x: t) => Option(x))
     assertEquals(result, (Some(Dog("Rex")), Some(Cat("Whiskers"))))
   }
 

@@ -11,7 +11,7 @@ extension (tup: Tuple)
 
   inline def hasDuplicates: HasDuplicates[tup.type] = compiletime.constValue[HasDuplicates[tup.type]]
 
-  inline def mapOnly[T](using tup.type containsOnly T)[F[_ <: T]](inline f: [t <: T] => t => F[t])
+  inline def mapAs[T](using tup.type containsOnly T)[F[_ <: T]](inline f: [t <: T] => t => F[t])
     : Tuple.Map[tup.type, [X] =>> F[X & T]] =
     tup.map[[X] =>> F[X & T]]([t] => (t: t) => f(t.asInstanceOf[t & T]))
 
