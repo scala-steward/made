@@ -103,6 +103,26 @@ object DoneOperation:
   type ExtractOf[X /* <: DoneOperation */ ] = X match
     case DoneOperation.Of[t] => t
 
+  /**
+   * Mix-in providing an ergonomic `apply(outer, arg)` shortcut for operations with exactly
+   * one input. The self-type refinement requires the mixing class to have
+   * `Args = Arg *: EmptyTuple`.
+   */
+  trait SingleApply extends DoneOperation:
+    self: DoneOperation { type Args = Arg *: EmptyTuple } =>
+    type Arg
+
+    final def apply(outer: OuterType, arg: Arg): OutputType = this.apply(outer, arg *: EmptyTuple)
+
+  /**
+   * Mix-in providing an ergonomic `apply(outer)` shortcut for parameterless operations.
+   * The self-type refinement requires the mixing class to have `Args = EmptyTuple`.
+   */
+  trait EmptyApply extends DoneOperation:
+    self: DoneOperation { type Args = EmptyTuple } =>
+
+    final def apply(outer: OuterType): OutputType = this.apply(outer, EmptyTuple)
+
 /**
  * Element representing a single input parameter of a [[DoneOperation]].
  *
@@ -190,7 +210,7 @@ object Done:
       member: Symbol,
       memberTpe: TypeRepr,
       outer: Expr[T],
-      args: Expr[Array[Any]],
+      args: Expr[Tuple],
     ): Expr[Out] =
       var idx = 0
       def go(tpe: TypeRepr): List[List[Term]] = tpe match
@@ -199,7 +219,7 @@ object Done:
             val i = idx
             idx += 1
             pTpe.asType match
-              case '[t] => '{ $args(${ Expr(i) }).asInstanceOf[t] }.asTerm
+              case '[t] => '{ $args.productElement(${ Expr(i) }).asInstanceOf[t] }.asTerm
           argTerms :: go(result)
         case _ => Nil
 
@@ -237,24 +257,66 @@ object Done:
                 '[outputTpe],
                 '{ type inputElems <: Tuple; $inputElemsExpr: inputElems },
               ) =>
-            '{
-              new DoneOperationWorkaround[T]:
-                override type Label = opLabel
-                override type Metadata = opMeta
-                override type InputElems = inputElems
-                override type OutputType = outputTpe
+            params match
+              case Nil =>
+                '{
+                  new DoneOperationWorkaround[T] with DoneOperation.EmptyApply:
+                    override type Label = opLabel
+                    override type Metadata = opMeta
+                    override type InputElems = inputElems
+                    override type OutputType = outputTpe
 
-                override val inputElems: InputElems = $inputElemsExpr
-                override def apply(outer: T, args: Array[Any]): outputTpe =
-                  ${ invokeExpr[outputTpe](member, opTpe, '{ outer }, '{ args }) }
-              : DoneOperation {
-                type Label = opLabel
-                type Metadata = opMeta
-                type InputElems = inputElems
-                type OuterType = T
-                type OutputType = outputTpe
-              }
-            }
+                    override val inputElems: InputElems = $inputElemsExpr
+                    override def apply(outer: T, args: Args): outputTpe =
+                      ${ invokeExpr[outputTpe](member, opTpe, '{ outer }, '{ args.asInstanceOf[Tuple] }) }
+                  : DoneOperation.EmptyApply {
+                    type Label = opLabel
+                    type Metadata = opMeta
+                    type InputElems = inputElems
+                    type OuterType = T
+                    type OutputType = outputTpe
+                  }
+                }
+              case (_, '[argT]) :: Nil =>
+                '{
+                  new DoneOperationWorkaround[T] with DoneOperation.SingleApply:
+                    override type Label = opLabel
+                    override type Metadata = opMeta
+                    override type InputElems = inputElems
+                    override type OutputType = outputTpe
+                    override type Arg = argT
+
+                    override val inputElems: InputElems = $inputElemsExpr
+                    override def apply(outer: T, args: Args): outputTpe =
+                      ${ invokeExpr[outputTpe](member, opTpe, '{ outer }, '{ args.asInstanceOf[Tuple] }) }
+                  : DoneOperation.SingleApply {
+                    type Label = opLabel
+                    type Metadata = opMeta
+                    type InputElems = inputElems
+                    type OuterType = T
+                    type OutputType = outputTpe
+                    type Arg = argT
+                  }
+                }
+              case _ =>
+                '{
+                  new DoneOperationWorkaround[T]:
+                    override type Label = opLabel
+                    override type Metadata = opMeta
+                    override type InputElems = inputElems
+                    override type OutputType = outputTpe
+
+                    override val inputElems: InputElems = $inputElemsExpr
+                    override def apply(outer: T, args: Args): outputTpe =
+                      ${ invokeExpr[outputTpe](member, opTpe, '{ outer }, '{ args.asInstanceOf[Tuple] }) }
+                  : DoneOperation {
+                    type Label = opLabel
+                    type Metadata = opMeta
+                    type InputElems = inputElems
+                    type OuterType = T
+                    type OutputType = outputTpe
+                  }
+                }
 
     (
       labelTypeOf(tSymbol, tSymbol.name.stripSuffix("$")), // find a better way than stripping $
