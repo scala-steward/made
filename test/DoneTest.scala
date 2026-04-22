@@ -255,6 +255,134 @@ class DoneTest extends munit.FunSuite:
     } = Done.derived[MathTools.type]
   }
 
+  test("abstract val declarations are treated as nullary operations") {
+    val _: Done {
+      type Type = ValHolder
+      type Label = "ValHolder"
+      type Metadata = Meta
+      type Operations = DoneOperation {
+        type Label = "message"
+        type Metadata = Meta
+        type InputElems = EmptyTuple
+        type OutputType = String
+      } *: DoneOperation {
+        type Label = "magic"
+        type Metadata = Meta
+        type InputElems = EmptyTuple
+        type OutputType = Int
+      } *: EmptyTuple
+    } = Done.derived[ValHolder]
+  }
+
+  test("Unit return type is preserved") {
+    val _: Done {
+      type Type = UnitReturning
+      type Label = "UnitReturning"
+      type Metadata = Meta
+      type Operations = DoneOperation {
+        type Label = "log"
+        type Metadata = Meta
+        type InputElems =
+          InputElem {
+            type Type = String
+            type Label = "msg"
+            type Metadata = Meta
+          } *: EmptyTuple
+        type OutputType = Unit
+      } *: DoneOperation {
+        type Label = "tick"
+        type Metadata = Meta
+        type InputElems = EmptyTuple
+        type OutputType = Unit
+      } *: EmptyTuple
+    } = Done.derived[UnitReturning]
+  }
+
+  test("function and tuple return types are preserved") {
+    val _: Done {
+      type Type = FuncAndTuple
+      type Label = "FuncAndTuple"
+      type Metadata = Meta
+      type Operations = DoneOperation {
+        type Label = "mkAdder"
+        type Metadata = Meta
+        type InputElems =
+          InputElem {
+            type Type = Int
+            type Label = "base"
+            type Metadata = Meta
+          } *: EmptyTuple
+        type OutputType = Int => Int
+      } *: DoneOperation {
+        type Label = "pair"
+        type Metadata = Meta
+        type InputElems = EmptyTuple
+        type OutputType = (Int, String)
+      } *: EmptyTuple
+    } = Done.derived[FuncAndTuple]
+  }
+
+  test("methods with empty parameter list yield empty InputElems") {
+    val _: Done {
+      type Type = EmptyParens
+      type Label = "EmptyParens"
+      type Metadata = Meta
+      type Operations = DoneOperation {
+        type Label = "a"
+        type Metadata = Meta
+        type InputElems = EmptyTuple
+        type OutputType = Int
+      } *: DoneOperation {
+        type Label = "b"
+        type Metadata = Meta
+        type InputElems = EmptyTuple
+        type OutputType = Int
+      } *: EmptyTuple
+    } = Done.derived[EmptyParens]
+  }
+
+  test("methods inherited without override do not appear in child operations") {
+    val _: Done {
+      type Type = NonOverridingChild
+      type Label = "NonOverridingChild"
+      type Metadata = Meta
+      type Operations = DoneOperation {
+        type Label = "childOnly"
+        type Metadata = Meta
+        type InputElems = EmptyTuple
+        type OutputType = Int
+      } *: EmptyTuple
+    } = Done.derived[NonOverridingChild]
+  }
+
+  test("overloaded methods both appear as separate operations with the same label") {
+    val _: Done {
+      type Type = OverloadedCompute
+      type Label = "OverloadedCompute"
+      type Metadata = Meta
+      type Operations = DoneOperation {
+        type Label = "compute"
+        type Metadata = Meta
+        type InputElems = InputElem {
+          type Type = Int
+          type Label = "x"
+          type Metadata = Meta
+        } *: EmptyTuple
+        type OutputType = Int
+      } *: DoneOperation {
+        type Label = "compute"
+        type Metadata = Meta
+        type InputElems =
+          InputElem {
+            type Type = String
+            type Label = "x"
+            type Metadata = Meta
+          } *: EmptyTuple
+        type OutputType = String
+      } *: EmptyTuple
+    } = Done.derived[OverloadedCompute]
+  }
+
 // --- Fixtures ---
 
 class ServiceMarker extends MetaAnnotation
@@ -319,3 +447,29 @@ trait MultiListService:
 object MathTools:
   def zero: Int = 0
   def toText(value: Int): String = value.toString
+
+trait ValHolder:
+  val magic: Int
+  val message: String
+
+trait UnitReturning:
+  def log(msg: String): Unit
+  def tick: Unit
+
+trait FuncAndTuple:
+  def mkAdder(base: Int): Int => Int
+  def pair: (Int, String)
+
+trait EmptyParens:
+  def a: Int
+  def b(): Int
+
+trait NonOverridingParent:
+  def inherited: String = "base"
+
+class NonOverridingChild extends NonOverridingParent:
+  def childOnly: Int = 42
+
+trait OverloadedCompute:
+  def compute(x: Int): Int
+  def compute(x: String): String
