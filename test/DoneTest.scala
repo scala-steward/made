@@ -13,6 +13,7 @@ class DoneTest extends munit.FunSuite:
         type Label = "external_id"
         type Metadata = Meta
         type InputElems = EmptyTuple
+        type OuterType = NamedService
         type OutputType = String
       } *: DoneOperation {
         type Label = "ping"
@@ -23,6 +24,7 @@ class DoneTest extends munit.FunSuite:
             type Label = "message"
             type Metadata = Meta
           } *: EmptyTuple
+        type OuterType = NamedService
         type OutputType = Boolean
       } *: DoneOperation {
         type Label = "combine"
@@ -37,11 +39,13 @@ class DoneTest extends munit.FunSuite:
             type Label = "right"
             type Metadata = Meta
           } *: EmptyTuple
+        type OuterType = NamedService
         type OutputType = String
       } *: DoneOperation {
         type Label = "version"
         type Metadata = Meta
         type InputElems = EmptyTuple
+        type OuterType = NamedService
         type OutputType = Int
       } *: EmptyTuple
     } = Done.derived[NamedService]
@@ -56,6 +60,7 @@ class DoneTest extends munit.FunSuite:
         type Label = "endpoint"
         type Metadata = Meta
         type InputElems = EmptyTuple
+        type OuterType = AliasImpl
         type OutputType = String
       } *: EmptyTuple
     } = Done.derived[AliasImpl]
@@ -75,11 +80,13 @@ class DoneTest extends munit.FunSuite:
             type Label = "task"
             type Metadata = Meta
           } *: EmptyTuple
+        type OuterType = AbstractJob
         type OutputType = Either[String, Int]
       } *: DoneOperation {
         type Label = "cached"
         type Metadata = Meta
         type InputElems = EmptyTuple
+        type OuterType = AbstractJob
         type OutputType = Int
       } *: EmptyTuple
     } = Done.derived[AbstractJob]
@@ -99,6 +106,7 @@ class DoneTest extends munit.FunSuite:
             type Label = "raw"
             type Metadata = Meta
           } *: EmptyTuple
+        type OuterType = Converter[Int]
         type OutputType = Int
       } *: EmptyTuple
     } = Done.derived[Converter[Int]]
@@ -113,6 +121,7 @@ class DoneTest extends munit.FunSuite:
         type Label = "hello"
         type Metadata = Meta
         type InputElems = EmptyTuple
+        type OuterType = Toolbox.type
         type OutputType = String
       } *: DoneOperation {
         type Label = "concat"
@@ -127,6 +136,7 @@ class DoneTest extends munit.FunSuite:
             type Label = "right"
             type Metadata = Meta
           } *: EmptyTuple
+        type OuterType = Toolbox.type
         type OutputType = String
       } *: EmptyTuple
     } = Done.derived[Toolbox.type]
@@ -141,11 +151,13 @@ class DoneTest extends munit.FunSuite:
         type Label = "code"
         type Metadata = Meta
         type InputElems = EmptyTuple
+        type OuterType = ServiceState
         type OutputType = String
       } *: DoneOperation {
         type Label = "isTerminal"
         type Metadata = Meta
         type InputElems = EmptyTuple
+        type OuterType = ServiceState
         type OutputType = Boolean
       } *: EmptyTuple
     } = Done.derived[ServiceState]
@@ -160,11 +172,13 @@ class DoneTest extends munit.FunSuite:
         type Label = "id"
         type Metadata = Meta
         type InputElems = EmptyTuple
+        type OuterType = RenamedService
         type OutputType = String
       } *: DoneOperation {
         type Label = "ping"
         type Metadata = Meta @MethodMarker
         type InputElems = EmptyTuple
+        type OuterType = RenamedService
         type OutputType = Boolean
       } *: EmptyTuple
     } = Done.derived[RenamedService]
@@ -179,11 +193,13 @@ class DoneTest extends munit.FunSuite:
         type Label = "items"
         type Metadata = Meta
         type InputElems = EmptyTuple
+        type OuterType = ComplexReturns
         type OutputType = List[String]
       } *: DoneOperation {
         type Label = "mapping"
         type Metadata = Meta
         type InputElems = EmptyTuple
+        type OuterType = ComplexReturns
         type OutputType = Map[String, Int]
       } *: DoneOperation {
         type Label = "either"
@@ -194,6 +210,7 @@ class DoneTest extends munit.FunSuite:
             type Label = "name"
             type Metadata = Meta
           } *: EmptyTuple
+        type OuterType = ComplexReturns
         type OutputType = Either[String, Int]
       } *: EmptyTuple
     } = Done.derived[ComplexReturns]
@@ -226,6 +243,7 @@ class DoneTest extends munit.FunSuite:
             type Label = "right"
             type Metadata = Meta
           } *: EmptyTuple
+        type OuterType = MultiListService
         type OutputType = String
       } *: EmptyTuple
     } = Done.derived[MultiListService]
@@ -240,6 +258,7 @@ class DoneTest extends munit.FunSuite:
         type Label = "zero"
         type Metadata = Meta
         type InputElems = EmptyTuple
+        type OuterType = MathTools.type
         type OutputType = Int
       } *: DoneOperation {
         type Label = "toText"
@@ -250,6 +269,7 @@ class DoneTest extends munit.FunSuite:
             type Label = "value"
             type Metadata = Meta
           } *: EmptyTuple
+        type OuterType = MathTools.type
         type OutputType = String
       } *: EmptyTuple
     } = Done.derived[MathTools.type]
@@ -264,11 +284,13 @@ class DoneTest extends munit.FunSuite:
         type Label = "message"
         type Metadata = Meta
         type InputElems = EmptyTuple
+        type OuterType = ValHolder
         type OutputType = String
       } *: DoneOperation {
         type Label = "magic"
         type Metadata = Meta
         type InputElems = EmptyTuple
+        type OuterType = ValHolder
         type OutputType = Int
       } *: EmptyTuple
     } = Done.derived[ValHolder]
@@ -288,11 +310,13 @@ class DoneTest extends munit.FunSuite:
             type Label = "msg"
             type Metadata = Meta
           } *: EmptyTuple
+        type OuterType = UnitReturning
         type OutputType = Unit
       } *: DoneOperation {
         type Label = "tick"
         type Metadata = Meta
         type InputElems = EmptyTuple
+        type OuterType = UnitReturning
         type OutputType = Unit
       } *: EmptyTuple
     } = Done.derived[UnitReturning]
@@ -312,11 +336,13 @@ class DoneTest extends munit.FunSuite:
             type Label = "base"
             type Metadata = Meta
           } *: EmptyTuple
+        type OuterType = FuncAndTuple
         type OutputType = Int => Int
       } *: DoneOperation {
         type Label = "pair"
         type Metadata = Meta
         type InputElems = EmptyTuple
+        type OuterType = FuncAndTuple
         type OutputType = (Int, String)
       } *: EmptyTuple
     } = Done.derived[FuncAndTuple]
@@ -331,11 +357,13 @@ class DoneTest extends munit.FunSuite:
         type Label = "a"
         type Metadata = Meta
         type InputElems = EmptyTuple
+        type OuterType = EmptyParens
         type OutputType = Int
       } *: DoneOperation {
         type Label = "b"
         type Metadata = Meta
         type InputElems = EmptyTuple
+        type OuterType = EmptyParens
         type OutputType = Int
       } *: EmptyTuple
     } = Done.derived[EmptyParens]
@@ -350,9 +378,78 @@ class DoneTest extends munit.FunSuite:
         type Label = "childOnly"
         type Metadata = Meta
         type InputElems = EmptyTuple
+        type OuterType = NonOverridingChild
         type OutputType = Int
       } *: EmptyTuple
     } = Done.derived[NonOverridingChild]
+  }
+
+  test("apply invokes parameterless method on target instance") {
+    val done = Done.derived[Calculator]
+    val _ *: _ *: answerOp *: EmptyTuple = done.operations
+
+    val impl: Calculator = new Calculator:
+      def add(a: Int, b: Int): Int = a + b
+      def mul(a: Int)(b: Int): Int = a * b
+      def answer: Int = 42
+
+    assertEquals(answerOp.apply(impl, EmptyTuple), 42)
+  }
+
+  test("apply invokes method with single parameter list") {
+    val done = Done.derived[Calculator]
+    val addOp *: _ *: _ *: EmptyTuple = done.operations
+
+    val impl: Calculator = new Calculator:
+      def add(a: Int, b: Int): Int = a + b
+      def mul(a: Int)(b: Int): Int = a * b
+      def answer: Int = 42
+
+    assertEquals(addOp.apply(impl, (7, 5)), 12)
+  }
+
+  test("apply invokes method with multiple parameter lists") {
+    val done = Done.derived[Calculator]
+    val _ *: mulOp *: _ *: EmptyTuple = done.operations
+
+    val impl: Calculator = new Calculator:
+      def add(a: Int, b: Int): Int = a + b
+      def mul(a: Int)(b: Int): Int = a * b
+      def answer: Int = 42
+
+    assertEquals(mulOp.apply(impl, (6, 7)), 42)
+  }
+
+  test("Done.invoke fixes target to Done.Type for type safety") {
+    val done = Done.derived[Calculator]
+    val addOp *: _ *: _ *: EmptyTuple = done.operations
+
+    val impl: Calculator = new Calculator:
+      def add(a: Int, b: Int): Int = a + b
+      def mul(a: Int)(b: Int): Int = a * b
+      def answer: Int = 42
+
+    assertEquals(done.invoke(addOp, impl, (2, 3)), 5)
+  }
+
+  test("apply dispatches virtually through an abstract member") {
+    val done = Done.derived[Calculator]
+    val _ *: _ *: answerOp *: EmptyTuple = done.operations
+
+    val impl: Calculator = new Calculator:
+      def add(a: Int, b: Int): Int = 0
+      def mul(a: Int)(b: Int): Int = 0
+      override def answer: Int = 99
+
+    assertEquals(answerOp.apply(impl, EmptyTuple), 99)
+  }
+
+  test("apply invokes methods on a singleton object") {
+    val done = Done.derived[MathTools.type]
+    val zeroOp *: toTextOp *: EmptyTuple = done.operations
+
+    assertEquals(zeroOp.apply(MathTools, EmptyTuple), 0)
+    assertEquals(toTextOp.apply(MathTools, Tuple(123)), "123")
   }
 
   test("overloaded methods both appear as separate operations with the same label") {
@@ -368,6 +465,7 @@ class DoneTest extends munit.FunSuite:
           type Label = "x"
           type Metadata = Meta
         } *: EmptyTuple
+        type OuterType = OverloadedCompute
         type OutputType = Int
       } *: DoneOperation {
         type Label = "compute"
@@ -378,6 +476,7 @@ class DoneTest extends munit.FunSuite:
             type Label = "x"
             type Metadata = Meta
           } *: EmptyTuple
+        type OuterType = OverloadedCompute
         type OutputType = String
       } *: EmptyTuple
     } = Done.derived[OverloadedCompute]
@@ -473,3 +572,8 @@ class NonOverridingChild extends NonOverridingParent:
 trait OverloadedCompute:
   def compute(x: Int): Int
   def compute(x: String): String
+
+trait Calculator:
+  def add(a: Int, b: Int): Int
+  def mul(a: Int)(b: Int): Int
+  def answer: Int

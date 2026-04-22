@@ -76,10 +76,32 @@ sealed trait DoneOperation:
   /** Tuple of [[InputElem]] subtypes describing the operation's parameters, in declaration order. */
   type InputElems <: Tuple
 
+  final type Args = Tuple.Map[InputElems, InputElem.ExtractOf]
+
   def inputElems: InputElems
+
+  /** The enclosing type that declares this operation — equals [[Done.Type]] of the parent [[Done]] mirror. */
+  type OuterType
 
   /** The return type of the operation. */
   type OutputType
+
+  /**
+   * Invokes the underlying member on an instance of the enclosing type.
+   *
+   * Arguments in `args` correspond positionally to [[InputElems]] (multiple parameter
+   * lists are flattened). Each argument is unboxed via `asInstanceOf` to its declared
+   * parameter type, so supplying a value of the wrong type will fail at runtime.
+   *
+   * @param outer the instance on which to invoke the member
+   * @param args  the positional arguments, in [[InputElems]] order
+   */
+  def apply(outer: OuterType, args: Args): OutputType
+
+object DoneOperation:
+  type Of[T] = DoneOperation { type OuterType = T }
+  type ExtractOf[X /* <: DoneOperation */ ] = X match
+    case DoneOperation.Of[t] => t
 
 /**
  * Element representing a single input parameter of a [[DoneOperation]].
@@ -102,8 +124,26 @@ sealed trait InputElem:
    */
   type Metadata <: Meta
 
+object InputElem:
+  type Of[T] = InputElem { type Type = T }
+  type ExtractOf[X /* <: InputElem */ ] = X match
+    case InputElem.Of[t] => t
+  type OuterOf[T] = InputElem { type OuterType = T }
+
 object Done:
   type Of[T] = Done { type Type = T }
+
+  /**
+   * Type-safe entry point for [[DoneOperation.apply]] — enforces at compile time
+   * that `op` was derived from the same mirror (its [[DoneOperation.OuterType]]
+   * equals the mirror's [[Done.Type]]).
+   */
+  extension [T](done: Done.Of[T])
+    def invoke(
+      op: DoneOperation { type OuterType = T },
+      target: T,
+      args: op.Args,
+    ): op.OutputType = op.apply(target, args)
 
   /**
    * Derives a [[Done]] mirror for `T` at compile time.
@@ -117,6 +157,10 @@ object Done:
    * @see [[InputElem]]
    */
   transparent inline given derived[T]: Done.Of[T] = ${ derivedImpl[T] }
+
+  // workaround for https://github.com/scala/scala3/issues/25245
+  private sealed trait DoneOperationWorkaround[Outer] extends DoneOperation:
+    final type OuterType = Outer
 
   private def derivedImpl[T: Type](using quotes: Quotes): Expr[Done.Of[T]] =
     import quotes.reflect.*
@@ -141,6 +185,28 @@ object Done:
           )
         case other =>
           (Nil, other.asType)
+
+    def invokeExpr[Out: Type](
+      member: Symbol,
+      memberTpe: TypeRepr,
+      outer: Expr[T],
+      args: Expr[Array[Any]],
+    ): Expr[Out] =
+      var idx = 0
+      def go(tpe: TypeRepr): List[List[Term]] = tpe match
+        case MethodType(_, paramTypes, result) =>
+          val argTerms = paramTypes.map: pTpe =>
+            val i = idx
+            idx += 1
+            pTpe.asType match
+              case '[t] => '{ $args(${ Expr(i) }).asInstanceOf[t] }.asTerm
+          argTerms :: go(result)
+        case _ => Nil
+
+      val argLists = go(memberTpe)
+      val sel = outer.asTerm.select(member)
+      val applied = if argLists.isEmpty then sel else sel.appliedToArgss(argLists)
+      applied.asExprOf[Out]
 
     val operations =
       for
@@ -172,13 +238,22 @@ object Done:
                 '{ type inputElems <: Tuple; $inputElemsExpr: inputElems },
               ) =>
             '{
-              new DoneOperation:
+              new DoneOperationWorkaround[T]:
                 override type Label = opLabel
                 override type Metadata = opMeta
                 override type InputElems = inputElems
                 override type OutputType = outputTpe
 
                 override val inputElems: InputElems = $inputElemsExpr
+                override def apply(outer: T, args: Array[Any]): outputTpe =
+                  ${ invokeExpr[outputTpe](member, opTpe, '{ outer }, '{ args }) }
+              : DoneOperation {
+                type Label = opLabel
+                type Metadata = opMeta
+                type InputElems = inputElems
+                type OuterType = T
+                type OutputType = outputTpe
+              }
             }
 
     (
