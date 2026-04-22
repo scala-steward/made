@@ -212,18 +212,15 @@ object Done:
       outer: Expr[T],
       args: Expr[Tuple],
     ): Expr[Out] =
-      var idx = 0
-      def go(tpe: TypeRepr): List[List[Term]] = tpe match
+      def go(tpe: TypeRepr, idx: Int): List[List[Term]] = tpe match
         case MethodType(_, paramTypes, result) =>
           val argTerms = paramTypes.map: pTpe =>
-            val i = idx
-            idx += 1
             pTpe.asType match
-              case '[t] => '{ $args.productElement(${ Expr(i) }).asInstanceOf[t] }.asTerm
-          argTerms :: go(result)
+              case '[t] => '{ $args.productElement(${ Expr(idx) }).asInstanceOf[t] }.asTerm
+          argTerms :: go(result, idx + 1)
         case _ => Nil
 
-      val argLists = go(memberTpe)
+      val argLists = go(memberTpe, 0)
       val sel = outer.asTerm.select(member)
       val applied = if argLists.isEmpty then sel else sel.appliedToArgss(argLists)
       applied.asExprOf[Out]
