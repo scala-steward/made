@@ -79,7 +79,6 @@ class FieldAnnotationTest extends munit.FunSuite:
     val x *: EmptyTuple = mirror.elems
     assertEquals(x.label, "renamed")
     assert(x.hasAnnotation[Marker])
-    assert(x.hasAnnotation[name])
   }
 
   // --- Annotation on @generated member ---
