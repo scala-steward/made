@@ -2,7 +2,7 @@ package made
 
 import made.annotation.*
 
-import scala.annotation.{implicitNotFound, Annotation}
+import scala.annotation.implicitNotFound
 import scala.deriving.Mirror
 import scala.quoted.*
 
@@ -218,7 +218,6 @@ object MadeElem:
 
   type ExtractMeta[M /* <: MadeElem */ ] <: Meta = M match
     case MetaOf[meta] => meta
-private trait Meta
 
 object Made:
   type Of[T] = Made { type Type = T }
@@ -265,30 +264,11 @@ object Made:
 
   private def derivedImpl[T: Type](using quotes: Quotes): Expr[Made.Of[T]] =
     import quotes.reflect.*
+    val utils = new MacroUtils[quotes.type]
+    import utils.*
 
     val tTpe = TypeRepr.of[T]
     val tSymbol = tTpe.typeSymbol
-
-    def metaTypeOf(symbol: Symbol): Type[? <: Meta] =
-      val annotations = symbol.annotations.filter(_.tpe <:< TypeRepr.of[MetaAnnotation])
-      annotations
-        .foldRight(TypeRepr.of[Meta])((annot, tpe) => AnnotatedType(tpe, annot))
-        .asType
-        .asInstanceOf[Type[? <: Meta]]
-
-    extension (symbol: Symbol)
-      def hasAnnotationOf[AT <: Annotation: Type] =
-        symbol.hasAnnotation(TypeRepr.of[AT].typeSymbol)
-
-      def getAnnotationOf[AT <: Annotation: Type] =
-        symbol.getAnnotation(TypeRepr.of[AT].typeSymbol).map(_.asExprOf[AT])
-
-    def labelTypeOf(sym: Symbol, fallback: String): Type[? <: String] =
-      val syms = Iterator(sym) ++ sym.allOverriddenSymbols
-      val res = syms.find(_.hasAnnotationOf[name]).flatMap(_.getAnnotationOf[name])
-      stringToType(res match
-        case Some('{ new `name`($value) }) => value.valueOrAbort
-        case _ => fallback)
 
     val generatedElems = for
       member <- tSymbol.fieldMembers ++ tSymbol.declaredMethods

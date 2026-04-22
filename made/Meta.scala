@@ -1,0 +1,3 @@
+package made
+
+trait Meta
