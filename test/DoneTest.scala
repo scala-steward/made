@@ -286,17 +286,17 @@ class DoneTest extends munit.FunSuite:
       type Label = "ValHolder"
       type Metadata = Meta
       type Operations = DoneOperation.EmptyApply {
-        type Label = "message"
-        type Metadata = Meta
-        type InputElems = EmptyTuple
-        type OuterType = ValHolder
-        type OutputType = String
-      } *: DoneOperation.EmptyApply {
         type Label = "magic"
         type Metadata = Meta
         type InputElems = EmptyTuple
         type OuterType = ValHolder
         type OutputType = Int
+      } *: DoneOperation.EmptyApply {
+        type Label = "message"
+        type Metadata = Meta
+        type InputElems = EmptyTuple
+        type OuterType = ValHolder
+        type OutputType = String
       } *: EmptyTuple
     } = Done.derived[ValHolder]
   }
