@@ -73,3 +73,6 @@ private[made] class MacroUtils[Q <: Quotes](using val quotes: Q):
     stringToType(res match
       case Some('{ new `name`($value) }) => value.valueOrAbort
       case _ => fallback)
+
+private[made] given (quotes: Quotes) => Ordering[quotes.reflect.Position] =
+  Ordering.by(pos => (pos.sourceFile.path, pos.start, pos.end))
