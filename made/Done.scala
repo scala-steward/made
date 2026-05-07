@@ -214,10 +214,10 @@ object Done:
     ): Expr[Out] =
       def go(tpe: TypeRepr, idx: Int): List[List[Term]] = tpe match
         case MethodType(_, paramTypes, result) =>
-          val argTerms = paramTypes.map: pTpe =>
+          val argTerms = paramTypes.zipWithIndex.map: (pTpe, i) =>
             pTpe.asType match
-              case '[t] => '{ $args.productElement(${ Expr(idx) }).asInstanceOf[t] }.asTerm
-          argTerms :: go(result, idx + 1)
+              case '[t] => '{ $args.productElement(${ Expr(idx + i) }).asInstanceOf[t] }.asTerm
+          argTerms :: go(result, idx + paramTypes.size)
         case _ => Nil
 
       val argLists = go(memberTpe, 0)
