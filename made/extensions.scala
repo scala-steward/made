@@ -1,8 +1,6 @@
 package made
 
-import made.annotation.MetaAnnotation
-
-import scala.annotation.{publicInBinary, tailrec}
+import scala.annotation.{publicInBinary, tailrec, Annotation}
 import scala.quoted.*
 
 extension [M <: Meta](self: { type Metadata = M })
@@ -12,7 +10,7 @@ extension [M <: Meta](self: { type Metadata = M })
    * Transparent inline - resolved entirely at compile time, no runtime cost.
    * `A` must extend [[made.annotation.MetaAnnotation]].
    */
-  transparent inline def hasAnnotation[A <: MetaAnnotation]: Boolean = ${ hasAnnotationImpl[A, M] }
+  transparent inline def hasAnnotation[A <: Annotation]: Boolean = ${ hasAnnotationImpl[A, M] }
 
   /**
    * Returns `Some(annotation)` if the mirror's `Metadata` type member contains an annotation
@@ -22,7 +20,7 @@ extension [M <: Meta](self: { type Metadata = M })
    * (e.g., `getAnnotation[JsonName].get.value`). Inline - resolved at compile time.
    * `A` must extend [[made.annotation.MetaAnnotation]`.
    */
-  inline def getAnnotation[A <: MetaAnnotation]: Option[A] = ${ getAnnotationImpl[A, M] }
+  inline def getAnnotation[A <: Annotation]: Option[A] = ${ getAnnotationImpl[A, M] }
 
 extension [L <: String](l: { type Label = L })
   /**
@@ -36,7 +34,7 @@ extension [Ls <: Tuple](l: { type ElemLabels = Ls })
    */
   inline def elemLabels: Ls = compiletime.constValueTuple[Ls]
 
-@publicInBinary private def getAnnotationImpl[A <: MetaAnnotation: Type, M <: Meta: Type](using quotes: Quotes)
+@publicInBinary private def getAnnotationImpl[A <: Annotation: Type, M <: Meta: Type](using quotes: Quotes)
   : Expr[Option[A]] =
   import quotes.reflect.*
 
@@ -47,6 +45,6 @@ extension [Ls <: Tuple](l: { type ElemLabels = Ls })
 
   Expr.ofOption(loop(TypeRepr.of[M]))
 
-@publicInBinary private def hasAnnotationImpl[A <: MetaAnnotation: Type, M <: Meta: Type](using quotes: Quotes)
+@publicInBinary private def hasAnnotationImpl[A <: Annotation: Type, M <: Meta: Type](using quotes: Quotes)
   : Expr[Boolean] =
   Expr(getAnnotationImpl[A, M].isExprOf[Some[A]])
