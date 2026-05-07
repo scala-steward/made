@@ -227,7 +227,7 @@ object Done:
 
     val operations =
       for
-        member <- tSymbol.fieldMembers ++ tSymbol.declaredMethods
+        member <- (tSymbol.fieldMembers ++ tSymbol.declaredMethods).sortBy(_.pos.getOrElse(Position.ofMacroExpansion))
         opTpe = tTpe.memberType(member).widen
         extract(params, outputTpe) = opTpe.runtimeChecked
       yield
