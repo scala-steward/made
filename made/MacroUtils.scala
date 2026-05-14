@@ -57,9 +57,12 @@ private[made] class MacroUtils[Q <: Quotes](using val quotes: Q):
     def hasAnnotationOf[AT <: Annotation: Type] =
       symbol.hasAnnotation(TypeRepr.of[AT].typeSymbol)
 
+    def hasOrInheritsAnnotationOf[AT <: Annotation: Type] =
+      symbol.hasAnnotationOf[AT] || symbol.allOverriddenSymbols.exists(_.hasAnnotationOf[AT])
+
     def getAnnotationOf[AT <: Annotation: Type] =
       symbol.getAnnotation(TypeRepr.of[AT].typeSymbol).map(_.asExprOf[AT])
-
+  
   def metaTypeOf(symbol: Symbol): Type[? <: Meta] =
     symbol.annotations
       .filter(_.tpe <:< TypeRepr.of[MetaAnnotation])
