@@ -312,3 +312,24 @@ class ContainsOnlyTest extends munit.FunSuite:
     assertEquals(first, "a")
     assertEquals(tuple.size, 3)
   }
+
+  test("containsOnly is contravariant in Tup") {
+    sealed trait Fruit
+
+    class Apple extends Fruit
+
+    class Banana extends Fruit
+
+    summon[(Fruit, Fruit) containsOnly Fruit]
+    // Since (Apple, Apple) <: (Fruit, Fruit)
+    // and containsOnly is -Tup
+    // then containsOnly[(Fruit, Fruit), Fruit] <: containsOnly[(Apple, Apple), Fruit]
+    summon[(Apple, Apple) containsOnly Fruit]
+
+    type Super
+    type A <: Super
+    type B <: Super
+
+    summon[(A, A) containsOnly Super]
+    summon[(A, B) containsOnly Super]
+  }
