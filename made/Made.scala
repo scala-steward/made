@@ -271,8 +271,8 @@ object Made:
     val tSymbol = tTpe.typeSymbol
 
     val generatedElems = for
-      member <- tSymbol.fieldMembers ++ tSymbol.declaredMethods
-      if member.hasAnnotationOf[generated]
+      member <- (tSymbol.fieldMembers ++ tSymbol.methodMembers).distinct.sortBy(_.pos)
+      if member.hasOrInheritsAnnotationOf[generated]
       _ = if !(member.isValDef || member.isDefDef) then
         report.errorAndAbort(
           "@generated can only be applied to vals and defs.",
