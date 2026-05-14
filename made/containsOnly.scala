@@ -2,7 +2,7 @@ package made
 
 import scala.annotation.unused
 
-opaque infix type containsOnly[Tup <: Tuple, T] = Boolean //or true?
+opaque infix type containsOnly[-Tup <: Tuple, T] = Boolean //or true?
 
 object containsOnly:
 
