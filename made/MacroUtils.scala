@@ -62,7 +62,7 @@ private[made] class MacroUtils[Q <: Quotes](using val quotes: Q):
 
     def getAnnotationOf[AT <: Annotation: Type] =
       symbol.getAnnotation(TypeRepr.of[AT].typeSymbol).map(_.asExprOf[AT])
-  
+
   def metaTypeOf(symbol: Symbol): Type[? <: Meta] =
     symbol.annotations
       .filter(_.tpe <:< TypeRepr.of[MetaAnnotation])

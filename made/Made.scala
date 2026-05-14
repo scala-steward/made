@@ -271,7 +271,7 @@ object Made:
     val tSymbol = tTpe.typeSymbol
 
     val generatedElems = for
-      member <- (tSymbol.fieldMembers ++ tSymbol.methodMembers).distinct
+      member <- (tSymbol.fieldMembers ++ tSymbol.methodMembers).distinct.sortBy(_.pos)
       if member.hasOrInheritsAnnotationOf[generated]
       _ = if !(member.isValDef || member.isDefDef) then
         report.errorAndAbort(
