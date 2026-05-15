@@ -68,6 +68,19 @@ sealed trait Made:
   def elems: Elems
   def generatedElems: GeneratedElems
 
+  /**
+   * Path-dependent evidence: the mirror's [[Elems]] tuple is guaranteed by the deriver to be
+   * a tuple of [[MadeElem]]s. Available wherever this `Made` instance is in scope so plural
+   * extensions like `made.elems.hasAnnotations[A]` summon evidence without explicit imports.
+   */
+  given Elems containsOnly MadeElem = containsOnly.refl
+
+  /**
+   * Path-dependent evidence: the mirror's [[Metadata]] tuple is a tuple of `Meta` (or
+   * `Meta @ann`) entries. Mirrors the guarantee for `hasAnnotation[A]` / `getAnnotation[A]`.
+   */
+  given Metadata containsOnly Meta = containsOnly.refl
+
 /**
  * Base type for elements within a [[Made.Elems]] tuple.
  *
@@ -111,6 +124,9 @@ sealed trait MadeElem:
    * and [[getAnnotation]].
    */
   type Metadata <: Tuple
+
+  /** Path-dependent evidence that this element's [[Metadata]] is a tuple of `Meta` entries. */
+  given Metadata containsOnly Meta = containsOnly.refl
 
 /**
  * Element representing a constructor parameter in a product type mirror.
