@@ -91,6 +91,35 @@ class FieldAnnotationTest extends munit.FunSuite:
     assert(gen.hasAnnotation[generated])
   }
 
+  // --- Compile-time singleton narrowing ---
+
+  test("hasAnnotation narrows to singleton true/false") {
+    val mirror = Made.derived[AnnotatedFields]
+    val x *: y *: _ *: EmptyTuple = mirror.elems
+    val b1: true = x.hasAnnotation[Marker]
+    val b2: false = y.hasAnnotation[Marker]
+    assert(b1)
+    assert(!b2)
+  }
+
+  test("getAnnotation narrows to singleton Some/None") {
+    val mirror = Made.derived[AnnotatedFields]
+    val x *: y *: _ *: EmptyTuple = mirror.elems
+    val s: Some[Marker] = x.getAnnotation[Marker]
+    val n: None.type = y.getAnnotation[Marker]
+    assert(s.value.isInstanceOf[Marker])
+    assertEquals(n, None)
+  }
+
+  test("inline if on hasAnnotation specialises at compile time") {
+    val mirror = Made.derived[AnnotatedFields]
+    val x *: y *: _ *: EmptyTuple = mirror.elems
+    inline def tag(elem: Any, has: Boolean): String =
+      inline if has then "yes" else "no"
+    assertEquals(tag(x, x.hasAnnotation[Marker]), "yes")
+    assertEquals(tag(y, y.hasAnnotation[Marker]), "no")
+  }
+
 // --- Fixtures ---
 
 class Marker extends MetaAnnotation
