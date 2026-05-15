@@ -5,36 +5,22 @@ import scala.quoted.*
 
 extension [M <: Tuple](self: { type Metadata = M })(using M containsOnly Meta)
   /**
-   * Returns `true` if the mirror's `Metadata` tuple contains an entry with annotation `A`,
-   * `false` otherwise.
+   * Returns `true` if the mirror's `Metadata` tuple contains an annotation of type `A`.
    *
-   * Transparent inline — the result is a singleton-typed `true` or `false` literal type, so
-   * callers can use it directly in `inline if` to specialise code at compile time.
+   * Transparent inline - resolved entirely at compile time, no runtime cost.
    * `A` must extend [[made.annotation.MetaAnnotation]].
-   *
-   * Requires evidence that `M` is a tuple of `Meta` (or `Meta @ann`) entries; the evidence
-   * fails to summon when `M` is abstract, surfacing a compile error instead of silently
-   * returning `false`.
    */
-  transparent inline def hasAnnotation[A <: Annotation]: Boolean =
-    ${ hasAnnotationImpl[A, M] }
+  transparent inline def hasAnnotation[A <: Annotation]: Boolean = ${ hasAnnotationImpl[A, M] }
 
   /**
-   * Returns `Some(annotation)` if the mirror's `Metadata` tuple contains an entry with
-   * annotation of type `A`, `None` otherwise.
+   * Returns `Some(annotation)` if the mirror's `Metadata` tuple contains an annotation
+   * of type `A`, `None` otherwise.
    *
-   * Transparent inline — the result is statically typed as `Some[A]` or `None.type`, enabling
-   * compile-time dispatch via `inline match`.
    * The returned annotation instance provides access to annotation parameters
-   * (e.g., `getAnnotation[JsonName].get.value`). `A` must extend
-   * [[made.annotation.MetaAnnotation]].
-   *
-   * Requires evidence that `M` is a tuple of `Meta` (or `Meta @ann`) entries; the evidence
-   * fails to summon when `M` is abstract, surfacing a compile error instead of silently
-   * returning `None`.
+   * (e.g., `getAnnotation[JsonName].get.value`). Transparent inline - resolved at compile time.
+   * `A` must extend [[made.annotation.MetaAnnotation]].
    */
-  transparent inline def getAnnotation[A <: Annotation]: Option[A] =
-    ${ getAnnotationImpl[A, M] }
+  transparent inline def getAnnotation[A <: Annotation]: Option[A] = ${ getAnnotationImpl[A, M] }
 
 extension [L <: String](l: { type Label = L })
   /**
@@ -48,33 +34,17 @@ extension [Ls <: Tuple](l: { type ElemLabels = Ls })
    */
   inline def elemLabels: Ls = compiletime.constValueTuple[Ls]
 
-extension [Es <: Tuple](es: Es)(using Es containsOnly MadeElem)
+extension [Es <: Tuple](es: Es)
   /**
-   * Per-element annotation presence check over a tuple of [[MadeElem]]s.
-   *
-   * For each `Ei` in `Es`, evaluates whether `Ei`'s `Metadata` tuple contains an annotation
-   * of type `A`, returning a tuple of singleton-typed `true`/`false` literals of the same
-   * arity as `Es`.
-   *
-   * Transparent inline — the result type narrows to e.g. `(true, false, true)`, enabling
-   * compile-time dispatch in derivation logic.
-   *
-   * Requires evidence that `Es` is a tuple of [[MadeElem]]s.
+   * Per-element [[hasAnnotation]] over a tuple of [[MadeElem]]s.
    */
-  transparent inline def hasAnnotations[A <: Annotation]: Tuple =
+  transparent inline def hasAnnotations[A <: Annotation](using Es containsOnly MadeElem): Tuple =
     ${ hasAnnotationsImpl[Es, A] }
 
   /**
-   * Per-element annotation extraction over a tuple of [[MadeElem]]s.
-   *
-   * For each `Ei` in `Es`, returns `Some(annot)` when `Ei`'s `Metadata` contains an
-   * annotation of type `A`, otherwise `None`. The result is a tuple of singleton-typed
-   * `Some[A]` / `None.type` entries.
-   *
-   * Transparent inline — narrows per-element. Requires evidence that `Es` is a tuple of
-   * [[MadeElem]]s.
+   * Per-element [[getAnnotation]] over a tuple of [[MadeElem]]s.
    */
-  transparent inline def getAnnotations[A <: Annotation]: Tuple =
+  transparent inline def getAnnotations[A <: Annotation](using Es containsOnly MadeElem): Tuple =
     ${ getAnnotationsImpl[Es, A] }
 
 @publicInBinary private def getAnnotationImpl[A <: Annotation: Type, M <: Tuple: Type](using quotes: Quotes)
