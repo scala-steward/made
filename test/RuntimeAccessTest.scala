@@ -16,18 +16,22 @@ class RuntimeAccessTest extends munit.FunSuite:
     assert(errors.nonEmpty, "Expected compile error for erased label access")
   }
 
-  test("Seq[MadeElem].map(_.hasAnnotation[...]) compiles but loses type info - always false") {
-    val m = Made.derived[RAAnnotated]
-    val elems: List[MadeElem] = m.elems.toList.asInstanceOf[List[MadeElem]]
-    val results = elems.map(_.hasAnnotation[RAMarker])
-    assertEquals(results, List(false, false))
+  test("Seq[MadeElem].map(_.hasAnnotation[...]) does not compile - abstract Metadata") {
+    val errors = typeCheckErrors("""
+      val m = Made.derived[RAAnnotated]
+      val elems: List[MadeElem] = m.elems.toList.asInstanceOf[List[MadeElem]]
+      elems.map(_.hasAnnotation[RAMarker])
+    """)
+    assert(errors.nonEmpty, "Expected compile error: containsOnly Meta evidence missing for abstract Metadata")
   }
 
-  test("Seq[MadeElem].map(_.getAnnotation[...]) compiles but loses type info - always None") {
-    val m = Made.derived[RAAnnotated]
-    val elems: List[MadeElem] = m.elems.toList.asInstanceOf[List[MadeElem]]
-    val results = elems.map(_.getAnnotation[RAMarker])
-    assertEquals(results, List(None, None))
+  test("Seq[MadeElem].map(_.getAnnotation[...]) does not compile - abstract Metadata") {
+    val errors = typeCheckErrors("""
+      val m = Made.derived[RAAnnotated]
+      val elems: List[MadeElem] = m.elems.toList.asInstanceOf[List[MadeElem]]
+      elems.map(_.getAnnotation[RAMarker])
+    """)
+    assert(errors.nonEmpty, "Expected compile error: containsOnly Meta evidence missing for abstract Metadata")
   }
 
   // --- elems.toList / toArray ---

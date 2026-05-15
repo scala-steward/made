@@ -11,8 +11,13 @@ extension [M <: Tuple](self: { type Metadata = M })
    * Transparent inline — the result is a singleton-typed `true` or `false` literal type, so
    * callers can use it directly in `inline if` to specialise code at compile time.
    * `A` must extend [[made.annotation.MetaAnnotation]].
+   *
+   * Requires evidence that `M` is a tuple of `Meta` (or `Meta @ann`) entries; the evidence
+   * fails to summon when `M` is abstract, surfacing a compile error instead of silently
+   * returning `false`.
    */
-  transparent inline def hasAnnotation[A <: Annotation]: Boolean = ${ hasAnnotationImpl[A, M] }
+  transparent inline def hasAnnotation[A <: Annotation](using M containsOnly Meta): Boolean =
+    ${ hasAnnotationImpl[A, M] }
 
   /**
    * Returns `Some(annotation)` if the mirror's `Metadata` tuple contains an entry with
@@ -23,8 +28,13 @@ extension [M <: Tuple](self: { type Metadata = M })
    * The returned annotation instance provides access to annotation parameters
    * (e.g., `getAnnotation[JsonName].get.value`). `A` must extend
    * [[made.annotation.MetaAnnotation]].
+   *
+   * Requires evidence that `M` is a tuple of `Meta` (or `Meta @ann`) entries; the evidence
+   * fails to summon when `M` is abstract, surfacing a compile error instead of silently
+   * returning `None`.
    */
-  transparent inline def getAnnotation[A <: Annotation]: Option[A] = ${ getAnnotationImpl[A, M] }
+  transparent inline def getAnnotation[A <: Annotation](using M containsOnly Meta): Option[A] =
+    ${ getAnnotationImpl[A, M] }
 
 extension [L <: String](l: { type Label = L })
   /**

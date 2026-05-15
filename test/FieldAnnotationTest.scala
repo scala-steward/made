@@ -114,10 +114,10 @@ class FieldAnnotationTest extends munit.FunSuite:
   test("inline if on hasAnnotation specialises at compile time") {
     val mirror = Made.derived[AnnotatedFields]
     val x *: y *: _ *: EmptyTuple = mirror.elems
-    inline def tag(elem: Any, has: Boolean): String =
+    inline def tag(has: Boolean): String =
       inline if has then "yes" else "no"
-    assertEquals(tag(x, x.hasAnnotation[Marker]), "yes")
-    assertEquals(tag(y, y.hasAnnotation[Marker]), "no")
+    assertEquals(tag(x.hasAnnotation[Marker]), "yes")
+    assertEquals(tag(y.hasAnnotation[Marker]), "no")
   }
 
 // --- Fixtures ---
