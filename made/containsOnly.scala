@@ -2,9 +2,9 @@ package made
 
 import scala.annotation.unused
 
-opaque infix type containsOnly[-Tup <: Tuple, T] = Boolean //or true?
+opaque infix type containsOnly[-Tup <: Tuple, +T] = Boolean //or true?
 
-object containsOnly:
+object containsOnly extends containsOnlyLowPriority:
 
   type Loop[Tup <: Tuple, T] <: Boolean = Tup match
     case EmptyTuple => true
@@ -20,3 +20,6 @@ object containsOnly:
   given [Tup <: Tuple, T] => (@unused ev: Tup containsOnly T) => Conversion[Tuple.Head[Tup], T] = _.asInstanceOf[T]
 
   given [Tup <: Tuple, T] => (@unused ev: Tup containsOnly T) => Conversion[Tuple.Last[Tup], T] = _.asInstanceOf[T]
+
+sealed trait containsOnlyLowPriority:
+  given Tuple containsOnly Any = containsOnly.refl
