@@ -63,12 +63,11 @@ private[made] class MacroUtils[Q <: Quotes](using val quotes: Q):
     def getAnnotationOf[AT <: Annotation: Type] =
       symbol.getAnnotation(TypeRepr.of[AT].typeSymbol).map(_.asExprOf[AT])
 
-  def metaTypeOf(symbol: Symbol): Type[? <: Meta] =
-    symbol.annotations
+  def metaTypeOf(symbol: Symbol): Type[? <: Tuple] =
+    val annotated: List[Type[? <: AnyKind]] = symbol.annotations
       .filter(_.tpe <:< TypeRepr.of[MetaAnnotation])
-      .foldRight(TypeRepr.of[Meta])((annot, tpe) => AnnotatedType(tpe, annot))
-      .asType
-      .asInstanceOf[Type[? <: Meta]]
+      .map(annot => AnnotatedType(TypeRepr.of[Meta], annot).asType)
+    traverseTypes(annotated)
 
   def labelTypeOf(sym: Symbol, fallback: String): Type[? <: String] =
     val syms = Iterator(sym) ++ sym.allOverriddenSymbols

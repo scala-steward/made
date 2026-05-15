@@ -81,19 +81,19 @@ class RuntimeAccessTest extends munit.FunSuite:
     val m: Made.Sum {
       type Type = RAEnum
       type Label = "RAEnum"
-      type Metadata = Meta
+      type Metadata = EmptyTuple
       type Elems = MadeSubSingletonElem {
         type Type = RAEnum.A.type
         type Label = "A"
-        type Metadata = Meta
+        type Metadata = EmptyTuple
       } *: MadeSubSingletonElem {
         type Type = RAEnum.B.type
         type Label = "B"
-        type Metadata = Meta
+        type Metadata = EmptyTuple
       } *: MadeSubElem {
         type Type = RAEnum.C
         type Label = "C"
-        type Metadata = Meta
+        type Metadata = EmptyTuple
       } *: EmptyTuple
     } = Made.derived[RAEnum]
 

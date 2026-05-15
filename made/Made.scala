@@ -53,12 +53,12 @@ sealed trait Made:
   type Label <: String
 
   /**
-   * Annotation metadata on `T`, represented as an `AnnotatedType` chain wrapping the [[Meta]]
-   * base type. When no `MetaAnnotation` annotations are present, `Metadata = Meta`. When
-   * annotations are present, `Metadata` becomes `Meta @Ann1 @Ann2 ...`.
-   * Query at runtime via [[hasAnnotation]] and [[getAnnotation]].
+   * Annotation metadata on `T`, represented as a [[Tuple]] of `Meta @ann` entries. When no
+   * `MetaAnnotation` annotations are present, `Metadata = EmptyTuple`. When annotations are
+   * present, `Metadata` becomes `(Meta @Ann1, Meta @Ann2, ...)`. Query via [[hasAnnotation]]
+   * and [[getAnnotation]].
    */
-  type Metadata <: Meta
+  type Metadata <: Tuple
 
   /** Tuple of [[MadeElem]] subtypes representing constructor fields (for products) or subtypes (for sums). */
   type Elems <: Tuple
@@ -105,12 +105,12 @@ sealed trait MadeElem:
   type Label <: String
 
   /**
-   * Annotation metadata on `T`, represented as an `AnnotatedType` chain wrapping the [[Meta]]
-   * base type. When no `MetaAnnotation` annotations are present, `Metadata = Meta`. When
-   * annotations are present, `Metadata` becomes `Meta @Ann1 @Ann2 ...`.
-   * Query at runtime via [[hasAnnotation]] and [[getAnnotation]].
+   * Annotation metadata on this element, represented as a [[Tuple]] of `Meta @ann` entries.
+   * When no `MetaAnnotation` annotations are present, `Metadata = EmptyTuple`. When annotations
+   * are present, `Metadata` becomes `(Meta @Ann1, Meta @Ann2, ...)`. Query via [[hasAnnotation]]
+   * and [[getAnnotation]].
    */
-  type Metadata <: Meta
+  type Metadata <: Tuple
 
 /**
  * Element representing a constructor parameter in a product type mirror.
@@ -208,7 +208,7 @@ private sealed trait GeneratedMadeElemWorkaround[Outer, Elem] extends GeneratedM
 object MadeElem:
   type Of[T] = MadeElem { type Type = T }
   type LabelOf[l <: String] = MadeElem { type Label = l }
-  type MetaOf[m <: Meta] = MadeElem { type Metadata = m }
+  type MetaOf[m <: Tuple] = MadeElem { type Metadata = m }
 
   type ExtractOf[M /* <: MadeElem */ ] = M match
     case Of[t] => t
@@ -216,7 +216,7 @@ object MadeElem:
   type ExtractLabel[M /* <: MadeElem */ ] <: String = M match
     case LabelOf[label] => label
 
-  type ExtractMeta[M /* <: MadeElem */ ] <: Meta = M match
+  type ExtractMeta[M /* <: MadeElem */ ] <: Tuple = M match
     case MetaOf[meta] => meta
 
 object Made:
@@ -227,7 +227,7 @@ object Made:
   type TransparentOf[T] = Made.Transparent { type Type = T; }
 
   type LabelOf[l <: String] = MadeElem { type Label = l }
-  type MetaOf[m <: Meta] = MadeElem { type Metadata = m }
+  type MetaOf[m <: Tuple] = MadeElem { type Metadata = m }
 
   type ExtractOf[M /* <: MadeElem */ ] = M match
     case Of[t] => t
@@ -235,7 +235,7 @@ object Made:
   type ExtractLabel[M /* <: MadeElem */ ] <: String = M match
     case LabelOf[label] => label
 
-  type ExtractMeta[M /* <: MadeElem */ ] <: Meta = M match
+  type ExtractMeta[M /* <: MadeElem */ ] <: Tuple = M match
     case MetaOf[meta] => meta
 
   /**
@@ -290,7 +290,7 @@ object Made:
       val elemTpe = tTpe.memberType(member).widen
 
       (elemTpe.asType, labelTypeOf(member, member.name), metaTypeOf(member)).runtimeChecked match
-        case ('[elemTpe], '[type elemLabel <: String; elemLabel], '[type meta <: Meta; meta]) =>
+        case ('[elemTpe], '[type elemLabel <: String; elemLabel], '[type meta <: Tuple; meta]) =>
           '{
             new GeneratedMadeElemWorkaround[T, elemTpe]:
               type Label = elemLabel
@@ -310,7 +310,7 @@ object Made:
 
     def madeFieldOf(field: Symbol): Expr[MadeFieldElem] =
       (field.termRef.widen.asType, labelTypeOf(field, field.name), metaTypeOf(field)).runtimeChecked match
-        case ('[fieldType], '[type elemLabel <: String; elemLabel], '[type fieldMeta <: Meta; fieldMeta]) =>
+        case ('[fieldType], '[type elemLabel <: String; elemLabel], '[type fieldMeta <: Tuple; fieldMeta]) =>
           '{
             new MadeFieldElem:
               type Type = fieldType
@@ -359,7 +359,7 @@ object Made:
       Expr.ofTupleFromSeq(generatedElems),
     ).runtimeChecked match
       case (
-            '[type meta <: Meta; meta],
+            '[type meta <: Tuple; meta],
             '[type label <: String; label],
             '{ type generatedElems <: Tuple; $generatedElemsExpr: generatedElems },
           ) =>
@@ -483,7 +483,7 @@ object Made:
               .foldLeft((Vector.empty[Expr[?]], Vector.empty[(label: String, original: String)])):
                 case ((exprs, names), ((fieldSymbol, index), '[fieldTpe])) =>
                   (labelTypeOf(fieldSymbol, fieldSymbol.name), metaTypeOf(fieldSymbol)).runtimeChecked match
-                    case ('[type elemLabel <: String; elemLabel], '[type meta <: Meta; meta]) =>
+                    case ('[type elemLabel <: String; elemLabel], '[type meta <: Tuple; meta]) =>
                       val expr = '{
                         new MadeFieldElem:
                           type Type = fieldTpe
@@ -538,7 +538,7 @@ object Made:
                   val subSymbol = if subType.termSymbol.isNoSymbol then subType.typeSymbol else subType.termSymbol
 
                   (labelTypeOf(subSymbol, subSymbol.name), metaTypeOf(subSymbol)).runtimeChecked match
-                    case ('[type elemLabel <: String; elemLabel], '[type meta <: Meta; meta]) =>
+                    case ('[type elemLabel <: String; elemLabel], '[type meta <: Tuple; meta]) =>
                       val expr = Type.of[subType] match
                         case '[type s <: scala.Singleton; s] =>
                           '{

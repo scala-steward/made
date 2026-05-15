@@ -6,19 +6,19 @@ class MadeDefaultsTest extends munit.FunSuite:
     val m: Made.Product {
       type Type = WithDefaults
       type Label = "WithDefaults"
-      type Metadata = Meta
+      type Metadata = EmptyTuple
       type Elems = MadeFieldElem {
         type Type = Int
         type Label = "x"
-        type Metadata = Meta
+        type Metadata = EmptyTuple
       } *: MadeFieldElem {
         type Type = String
         type Label = "y"
-        type Metadata = Meta
+        type Metadata = EmptyTuple
       } *: MadeFieldElem {
         type Type = Boolean
         type Label = "z"
-        type Metadata = Meta
+        type Metadata = EmptyTuple
       } *: EmptyTuple
     } = Made.derived[WithDefaults]
 
@@ -33,15 +33,15 @@ class MadeDefaultsTest extends munit.FunSuite:
     val m: Made.Product {
       type Type = AllDefaults
       type Label = "AllDefaults"
-      type Metadata = Meta
+      type Metadata = EmptyTuple
       type Elems = MadeFieldElem {
         type Type = Int
         type Label = "a"
-        type Metadata = Meta
+        type Metadata = EmptyTuple
       } *: MadeFieldElem {
         type Type = String
         type Label = "b"
-        type Metadata = Meta
+        type Metadata = EmptyTuple
       } *: EmptyTuple
     } = Made.derived[AllDefaults]
 
@@ -55,15 +55,15 @@ class MadeDefaultsTest extends munit.FunSuite:
     val m: Made.Product {
       type Type = MixedDefaults
       type Label = "MixedDefaults"
-      type Metadata = Meta
+      type Metadata = EmptyTuple
       type Elems = MadeFieldElem {
         type Type = Int
         type Label = "required"
-        type Metadata = Meta
+        type Metadata = EmptyTuple
       } *: MadeFieldElem {
         type Type = String
         type Label = "optional"
-        type Metadata = Meta
+        type Metadata = EmptyTuple
       } *: EmptyTuple
     } = Made.derived[MixedDefaults]
 
