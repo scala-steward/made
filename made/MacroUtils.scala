@@ -3,6 +3,7 @@ package made
 import made.annotation.{name, MetaAnnotation}
 
 import scala.annotation.Annotation
+import scala.collection.immutable.List
 import scala.quoted.*
 
 // like ValueOf but without the implicit search and boxing
@@ -33,7 +34,7 @@ def typeToString[S <: String: Type](using quotes: Quotes): S =
     case ConstantType(StringConstant(str)) => str.asInstanceOf[S]
     case _ => report.errorAndAbort(s"Unsupported singleton type: ${Type.show[S]}")
 
-def traverseTypes(tpes: List[Type[? <: AnyKind]])(using Quotes): Type[? <: Tuple] =
+def traverseTypes(tpes: Iterable[Type[? <: AnyKind]])(using Quotes): Type[? <: Tuple] =
   val empty: Type[? <: Tuple] = Type.of[EmptyTuple]
   tpes.foldRight(empty):
     case ('[tpe], '[type acc <: Tuple; acc]) => Type.of[tpe *: acc]
@@ -63,12 +64,12 @@ private[made] class MacroUtils[Q <: Quotes](using val quotes: Q):
     def getAnnotationOf[AT <: Annotation: Type] =
       symbol.getAnnotation(TypeRepr.of[AT].typeSymbol).map(_.asExprOf[AT])
 
-  def metaTypeOf(symbol: Symbol): Type[? <: Meta] =
-    symbol.annotations
+  def metaTypeOf(symbol: Symbol): Type[? <: Tuple] = traverseTypes(
+    symbol.annotations.iterator
       .filter(_.tpe <:< TypeRepr.of[MetaAnnotation])
-      .foldRight(TypeRepr.of[Meta])((annot, tpe) => AnnotatedType(tpe, annot))
-      .asType
-      .asInstanceOf[Type[? <: Meta]]
+      .map(annot => AnnotatedType(TypeRepr.of[Meta], annot).asType)
+      .toList,
+  )
 
   def labelTypeOf(sym: Symbol, fallback: String): Type[? <: String] =
     val syms = Iterator(sym) ++ sym.allOverriddenSymbols

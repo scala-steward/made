@@ -44,7 +44,7 @@ sealed trait Done:
    * base type. When no `MetaAnnotation` annotations are present, `Metadata = Meta`. When
    * annotations are present, `Metadata` becomes `Meta @Ann1 @Ann2 ...`.
    */
-  type Metadata <: Meta
+  type Metadata <: Tuple
 
   /** Tuple of [[DoneOperation]] subtypes, one per field or method of `T`. */
   type Operations <: Tuple
@@ -71,7 +71,7 @@ sealed trait DoneOperation:
    * Annotation metadata on the member, represented as an `AnnotatedType` chain wrapping
    * the [[Meta]] base type.
    */
-  type Metadata <: Meta
+  type Metadata <: Tuple
 
   /** Tuple of [[InputElem]] subtypes describing the operation's parameters, in declaration order. */
   type InputElems <: Tuple
@@ -142,7 +142,7 @@ sealed trait InputElem:
    * Annotation metadata on the parameter, represented as an `AnnotatedType` chain wrapping
    * the [[Meta]] base type.
    */
-  type Metadata <: Meta
+  type Metadata <: Tuple
 
 object InputElem:
   type Of[T] = InputElem { type Type = T }
@@ -237,7 +237,7 @@ object Done:
               new InputElem:
                 override type Type = inputTpe
                 override type Label = inputLabel
-                override type Metadata = Meta
+                override type Metadata = EmptyTuple
             }
           case (_, _) => wontHappen
         (
@@ -250,7 +250,7 @@ object Done:
           case (
                 '[opTpe],
                 '[type opLabel <: String; opLabel],
-                '[type opMeta <: Meta; opMeta],
+                '[type opMeta <: Tuple; opMeta],
                 '[outputTpe],
                 '{ type inputElems <: Tuple; $inputElemsExpr: inputElems },
               ) =>
@@ -322,7 +322,7 @@ object Done:
     ).runtimeChecked match
       case (
             '[type label <: String; label],
-            '[type meta <: Meta; meta],
+            '[type meta <: Tuple; meta],
             '{ type operations <: Tuple; $operationsExpr: operations },
           ) =>
         '{

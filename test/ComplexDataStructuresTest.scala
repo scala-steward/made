@@ -10,15 +10,15 @@ class ComplexDataStructuresTest extends munit.FunSuite:
     val m: Made.Product {
       type Type = WithList
       type Label = "WithList"
-      type Metadata = Meta
+      type Metadata = EmptyTuple
       type Elems = MadeFieldElem {
         type Type = Int
         type Label = "id"
-        type Metadata = Meta
+        type Metadata = EmptyTuple
       } *: MadeFieldElem {
         type Type = List[String]
         type Label = "items"
-        type Metadata = Meta
+        type Metadata = EmptyTuple
       } *: EmptyTuple
     } = Made.derived[WithList]
 
@@ -31,11 +31,11 @@ class ComplexDataStructuresTest extends munit.FunSuite:
     val _: Made.Product {
       type Type = WithMap
       type Label = "WithMap"
-      type Metadata = Meta
+      type Metadata = EmptyTuple
       type Elems = MadeFieldElem {
         type Type = Map[String, Int]
         type Label = "data"
-        type Metadata = Meta
+        type Metadata = EmptyTuple
       } *: EmptyTuple
     } = Made.derived[WithMap]
   }
@@ -46,11 +46,11 @@ class ComplexDataStructuresTest extends munit.FunSuite:
       type Elems = MadeFieldElem {
         type Type = Set[String]
         type Label = "tags"
-        type Metadata = Meta
+        type Metadata = EmptyTuple
       } *: MadeFieldElem {
         type Type = Vector[Double]
         type Label = "scores"
-        type Metadata = Meta
+        type Metadata = EmptyTuple
       } *: EmptyTuple
     } = Made.derived[WithSetAndVector]
   }
@@ -75,7 +75,7 @@ class ComplexDataStructuresTest extends munit.FunSuite:
       type Elems = MadeFieldElem {
         type Type = CDSInner
         type Label = "inner"
-        type Metadata = Meta
+        type Metadata = EmptyTuple
       } *: EmptyTuple
     } = Made.derived[CDSOuter]
   }
@@ -91,7 +91,7 @@ class ComplexDataStructuresTest extends munit.FunSuite:
       type Elems = MadeFieldElem {
         type Type = Option[List[String]]
         type Label = "items"
-        type Metadata = Meta
+        type Metadata = EmptyTuple
       } *: EmptyTuple
     } = Made.derived[WithOptionalList]
   }
@@ -101,7 +101,7 @@ class ComplexDataStructuresTest extends munit.FunSuite:
       type Elems = MadeFieldElem {
         type Type = Option[Option[Int]]
         type Label = "value"
-        type Metadata = Meta
+        type Metadata = EmptyTuple
       } *: EmptyTuple
     } = Made.derived[NestedOption]
   }
@@ -113,7 +113,7 @@ class ComplexDataStructuresTest extends munit.FunSuite:
       type Elems = MadeFieldElem {
         type Type = (String, Int)
         type Label = "pair"
-        type Metadata = Meta
+        type Metadata = EmptyTuple
       } *: EmptyTuple
     } = Made.derived[WithTuple]
   }
@@ -131,7 +131,7 @@ class ComplexDataStructuresTest extends munit.FunSuite:
       type Elems = MadeFieldElem {
         type Type = Either[String, Int]
         type Label = "result"
-        type Metadata = Meta
+        type Metadata = EmptyTuple
       } *: EmptyTuple
     } = Made.derived[WithEither]
   }
@@ -150,19 +150,19 @@ class ComplexDataStructuresTest extends munit.FunSuite:
     val m: Made.Sum {
       type Type = CDSEvent
       type Label = "CDSEvent"
-      type Metadata = Meta
+      type Metadata = EmptyTuple
       type Elems = MadeSubElem {
         type Type = CDSEvent.Created
         type Label = "Created"
-        type Metadata = Meta
+        type Metadata = EmptyTuple
       } *: MadeSubElem {
         type Type = CDSEvent.Updated
         type Label = "Updated"
-        type Metadata = Meta
+        type Metadata = EmptyTuple
       } *: MadeSubSingletonElem {
         type Type = CDSEvent.Deleted.type
         type Label = "Deleted"
-        type Metadata = Meta
+        type Metadata = EmptyTuple
       } *: EmptyTuple
     } = Made.derived[CDSEvent]
 
@@ -203,15 +203,15 @@ class ComplexDataStructuresTest extends munit.FunSuite:
     val _: Made.Product {
       type Type = CDSPair[String, Int]
       type Label = "CDSPair"
-      type Metadata = Meta
+      type Metadata = EmptyTuple
       type Elems = MadeFieldElem {
         type Type = String
         type Label = "first"
-        type Metadata = Meta
+        type Metadata = EmptyTuple
       } *: MadeFieldElem {
         type Type = Int
         type Label = "second"
-        type Metadata = Meta
+        type Metadata = EmptyTuple
       } *: EmptyTuple
     } = Made.derived[CDSPair[String, Int]]
   }
@@ -220,11 +220,11 @@ class ComplexDataStructuresTest extends munit.FunSuite:
     val _: Made.Product {
       type Type = Bounded[List[Int]]
       type Label = "Bounded"
-      type Metadata = Meta
+      type Metadata = EmptyTuple
       type Elems = MadeFieldElem {
         type Type = List[Int]
         type Label = "value"
-        type Metadata = Meta
+        type Metadata = EmptyTuple
       } *: EmptyTuple
     } = Made.derived[Bounded[List[Int]]]
   }

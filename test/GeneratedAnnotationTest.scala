@@ -12,12 +12,12 @@ class GeneratedAnnotationTest extends munit.FunSuite:
     type Expected = GeneratedMadeElem {
       type Type = String
       type Label = "ab"
-      type Metadata = Meta @generated
+      type Metadata = (Meta @generated) *: EmptyTuple
       type OuterType = Prod
     } *: GeneratedMadeElem {
       type Type = Int
       type Label = "len"
-      type Metadata = Meta @generated
+      type Metadata = (Meta @generated) *: EmptyTuple
       type OuterType = Prod
     } *: EmptyTuple
 
@@ -35,7 +35,7 @@ class GeneratedAnnotationTest extends munit.FunSuite:
     type Expected = GeneratedMadeElem {
       type Type = String
       type Label = "upper"
-      type Metadata = Meta @generated
+      type Metadata = (Meta @generated) *: EmptyTuple
       type OuterType = VC
     } *: EmptyTuple
 
@@ -51,7 +51,7 @@ class GeneratedAnnotationTest extends munit.FunSuite:
     type Expected = GeneratedMadeElem {
       type Type = Int
       type Label = "const"
-      type Metadata = Meta @generated
+      type Metadata = (Meta @generated) *: EmptyTuple
       type OuterType = SumADT
     } *: EmptyTuple
 
@@ -68,7 +68,7 @@ class GeneratedAnnotationTest extends munit.FunSuite:
     type Expected = GeneratedMadeElem {
       type Type = String
       type Label = "info"
-      type Metadata = Meta @generated
+      type Metadata = (Meta @generated) *: EmptyTuple
       type OuterType = GenEnum
     } *: EmptyTuple
 
@@ -85,7 +85,7 @@ class GeneratedAnnotationTest extends munit.FunSuite:
     type Expected = GeneratedMadeElem {
       type Type = Int
       type Label = "id"
-      type Metadata = Meta @generated
+      type Metadata = (Meta @generated) *: EmptyTuple
       type OuterType = GenObj.type
     } *: EmptyTuple
 
