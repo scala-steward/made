@@ -3,7 +3,7 @@ package made
 import scala.annotation.{publicInBinary, tailrec, Annotation}
 import scala.quoted.*
 
-extension [M <: Tuple](self: { type Metadata = M })
+extension [M <: Tuple](self: { type Metadata = M })(using M containsOnly Meta)
   /**
    * Returns `true` if the mirror's `Metadata` tuple contains an entry with annotation `A`,
    * `false` otherwise.
@@ -16,7 +16,7 @@ extension [M <: Tuple](self: { type Metadata = M })
    * fails to summon when `M` is abstract, surfacing a compile error instead of silently
    * returning `false`.
    */
-  transparent inline def hasAnnotation[A <: Annotation](using M containsOnly Meta): Boolean =
+  transparent inline def hasAnnotation[A <: Annotation]: Boolean =
     ${ hasAnnotationImpl[A, M] }
 
   /**
@@ -33,7 +33,7 @@ extension [M <: Tuple](self: { type Metadata = M })
    * fails to summon when `M` is abstract, surfacing a compile error instead of silently
    * returning `None`.
    */
-  transparent inline def getAnnotation[A <: Annotation](using M containsOnly Meta): Option[A] =
+  transparent inline def getAnnotation[A <: Annotation]: Option[A] =
     ${ getAnnotationImpl[A, M] }
 
 extension [L <: String](l: { type Label = L })
@@ -48,7 +48,7 @@ extension [Ls <: Tuple](l: { type ElemLabels = Ls })
    */
   inline def elemLabels: Ls = compiletime.constValueTuple[Ls]
 
-extension [Es <: Tuple](es: Es)
+extension [Es <: Tuple](es: Es)(using Es containsOnly MadeElem)
   /**
    * Per-element annotation presence check over a tuple of [[MadeElem]]s.
    *
@@ -61,7 +61,7 @@ extension [Es <: Tuple](es: Es)
    *
    * Requires evidence that `Es` is a tuple of [[MadeElem]]s.
    */
-  transparent inline def hasAnnotations[A <: Annotation](using Es containsOnly MadeElem): Tuple =
+  transparent inline def hasAnnotations[A <: Annotation]: Tuple =
     ${ hasAnnotationsImpl[Es, A] }
 
   /**
@@ -74,67 +74,30 @@ extension [Es <: Tuple](es: Es)
    * Transparent inline — narrows per-element. Requires evidence that `Es` is a tuple of
    * [[MadeElem]]s.
    */
-  transparent inline def getAnnotations[A <: Annotation](using Es containsOnly MadeElem): Tuple =
+  transparent inline def getAnnotations[A <: Annotation]: Tuple =
     ${ getAnnotationsImpl[Es, A] }
 
 @publicInBinary private def getAnnotationImpl[A <: Annotation: Type, M <: Tuple: Type](using quotes: Quotes)
   : Expr[Option[A]] =
   import quotes.reflect.*
 
-  def walk(tpe: Type[? <: Tuple]): List[Type[? <: AnyKind]] = tpe match
-    case '[EmptyTuple] => Nil
-    case '[t *: ts] => Type.of[t] :: walk(Type.of[ts])
-    case _ => Nil // abstract / non-reducible tuple: treat as if no annotations
-
-  @tailrec def loop(tpes: List[Type[? <: AnyKind]]): Option[Expr[A]] = tpes match
-    case Nil => None
-    case head :: rest =>
-      head match
-        case '[t] =>
-          TypeRepr.of[t] match
-            case AnnotatedType(_, annot) if annot.tpe <:< TypeRepr.of[A] => Some(annot.asExprOf[A])
-            case _ => loop(rest)
-
-  loop(walk(Type.of[M])) match
-    case Some(annotExpr) => '{ Some($annotExpr) }
-    case None => '{ None }
+  Expr.ofOption:
+    traverseTuple(Type.of[M]).iterator
+      .map(TypeRepr.of(using _))
+      .collectFirst:
+        case AnnotatedType(_, annot) if annot.tpe <:< TypeRepr.of[A] => annot.asExprOf[A]
 
 @publicInBinary private def hasAnnotationImpl[A <: Annotation: Type, M <: Tuple: Type](using quotes: Quotes)
-  : Expr[Boolean] =
-  if getAnnotationImpl[A, M].isExprOf[Some[A]] then '{ true } else '{ false }
+  : Expr[Boolean] = Expr(getAnnotationImpl[A, M].isExprOf[Some[A]])
 
 @publicInBinary private def hasAnnotationsImpl[Es <: Tuple: Type, A <: Annotation: Type](using quotes: Quotes)
-  : Expr[Tuple] =
-  import quotes.reflect.*
-
-  def consTuple(head: Expr[Boolean], tail: Expr[? <: Tuple]): Expr[? <: Tuple] =
-    tail match
-      case '{ type t <: Tuple; $tl: t } =>
-        head match
-          case '{ $b: bt } => '{ ${ b.asExprOf[bt] } *: $tl }
-
-  traverseTuple(Type.of[Es]).foldRight[Expr[? <: Tuple]]('{ EmptyTuple }): (elemType, accExpr) =>
-    elemType match
-      case '[h] =>
-        TypeRepr.of[MadeElem.ExtractMeta[h]].dealias.asType match
-          case '[type m <: Tuple; m] =>
-            consTuple(hasAnnotationImpl[A, m], accExpr)
-          case _ => consTuple('{ false }, accExpr)
+  : Expr[Tuple] = Expr.ofTupleFromSeq:
+  traverseTuple(Type.of[Es]).map:
+    case '[type m <: Tuple; MadeElem { type Metadata = m }] => hasAnnotationImpl[A, m]
+    case _ => Expr(false)
 
 @publicInBinary private def getAnnotationsImpl[Es <: Tuple: Type, A <: Annotation: Type](using quotes: Quotes)
-  : Expr[Tuple] =
-  import quotes.reflect.*
-
-  def consTuple(head: Expr[Option[A]], tail: Expr[? <: Tuple]): Expr[? <: Tuple] =
-    tail match
-      case '{ type t <: Tuple; $tl: t } =>
-        head match
-          case '{ $o: ot } => '{ ${ o.asExprOf[ot] } *: $tl }
-
-  traverseTuple(Type.of[Es]).foldRight[Expr[? <: Tuple]]('{ EmptyTuple }): (elemType, accExpr) =>
-    elemType match
-      case '[h] =>
-        TypeRepr.of[MadeElem.ExtractMeta[h]].dealias.asType match
-          case '[type m <: Tuple; m] =>
-            consTuple(getAnnotationImpl[A, m], accExpr)
-          case _ => consTuple('{ None }, accExpr)
+  : Expr[Tuple] = Expr.ofTupleFromSeq:
+  traverseTuple(Type.of[Es]).map:
+    case '[type m <: Tuple; MadeElem { type Metadata = m }] => getAnnotationImpl[A, m]
+    case _ => Expr(None)
