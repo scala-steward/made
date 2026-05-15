@@ -1,6 +1,6 @@
 package made
 
-import scala.annotation.{publicInBinary, tailrec, Annotation}
+import scala.annotation.{publicInBinary, Annotation}
 import scala.quoted.*
 
 extension [M <: Tuple](self: { type Metadata = M })(using M containsOnly Meta)
