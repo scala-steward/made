@@ -51,6 +51,12 @@ sealed trait Done:
 
   def operations: Operations
 
+  /** Path-dependent evidence that [[Metadata]] is a tuple of `Meta` entries. */
+  given Metadata containsOnly Meta = containsOnly.refl
+
+  /** Path-dependent evidence that [[Operations]] is a tuple of [[DoneOperation]]s. */
+  given Operations containsOnly DoneOperation = containsOnly.refl
+
 /**
  * Element representing a single operation (field or method) in a [[Done]] mirror.
  *
@@ -79,6 +85,12 @@ sealed trait DoneOperation:
   final type Args = Tuple.Map[InputElems, InputElem.ExtractOf]
 
   def inputElems: InputElems
+
+  /** Path-dependent evidence that [[Metadata]] is a tuple of `Meta` entries. */
+  given Metadata containsOnly Meta = containsOnly.refl
+
+  /** Path-dependent evidence that [[InputElems]] is a tuple of [[InputElem]]s. */
+  given InputElems containsOnly InputElem = containsOnly.refl
 
   /** The enclosing type that declares this operation — equals [[Done.Type]] of the parent [[Done]] mirror. */
   type OuterType
@@ -143,6 +155,9 @@ sealed trait InputElem:
    * the [[Meta]] base type.
    */
   type Metadata <: Tuple
+
+  /** Path-dependent evidence that [[Metadata]] is a tuple of `Meta` entries. */
+  given Metadata containsOnly Meta = containsOnly.refl
 
 object InputElem:
   type Of[T] = InputElem { type Type = T }

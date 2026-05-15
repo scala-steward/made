@@ -81,6 +81,13 @@ sealed trait Made:
    */
   given Metadata containsOnly Meta = containsOnly.refl
 
+  /**
+   * Path-dependent evidence: the mirror's [[GeneratedElems]] tuple is a tuple of
+   * [[GeneratedMadeElem]]s. Enables `made.generatedElems.hasAnnotations[A]` analogous to
+   * `made.elems.hasAnnotations[A]`.
+   */
+  given GeneratedElems containsOnly GeneratedMadeElem = containsOnly.refl
+
 /**
  * Base type for elements within a [[Made.Elems]] tuple.
  *
