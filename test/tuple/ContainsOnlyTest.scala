@@ -333,3 +333,63 @@ class ContainsOnlyTest extends munit.FunSuite:
     summon[(A, A) containsOnly Super]
     summon[(A, B) containsOnly Super]
   }
+
+  test("containsOnly is covariant in T: singleton widens to Int") {
+    val tuple: Tuple = (3, 3, 3)
+    given (tuple.type containsOnly 3) = containsOnly.refl
+
+    summon[tuple.type containsOnly Int]
+  }
+
+  test("containsOnly is covariant in T: subclass widens to superclass") {
+    sealed trait Fruit
+    class Apple extends Fruit
+
+    val tuple: Tuple = ("a", "b")
+
+    given (tuple.type containsOnly Apple) = containsOnly.refl
+
+    summon[tuple.type containsOnly Fruit]
+  }
+
+  test("containsOnly is covariant in T: abstract type bound widens") {
+    type Super
+    type A <: Super
+
+    val tuple: Tuple = ("a", "b")
+
+    given (tuple.type containsOnly A) = containsOnly.refl
+
+    summon[tuple.type containsOnly Super]
+  }
+
+  test("containsOnly is covariant in T: String literal widens to String") {
+    val tuple: Tuple = ("a", "b")
+    given (tuple.type containsOnly "a") = containsOnly.refl
+
+    summon[tuple.type containsOnly String]
+  }
+
+  test("any tuple containsOnly Any without explicit evidence") {
+    val tuple = ("a", "b")
+
+    summon[tuple.type containsOnly Any]
+  }
+
+  test("heterogeneous tuple containsOnly Any") {
+    summon[(Int, String, Boolean) containsOnly Any]
+  }
+
+  test("abstract Tuple containsOnly Any") {
+    val tuple: Tuple = (1, "x", true)
+
+    summon[tuple.type containsOnly Any]
+  }
+
+  test("EmptyTuple containsOnly Any") {
+    summon[EmptyTuple containsOnly Any]
+  }
+
+  test("nested tuple containsOnly Any") {
+    summon[((Int, Int), (String, String)) containsOnly Any]
+  }
