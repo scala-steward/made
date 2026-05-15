@@ -34,18 +34,16 @@ extension [Ls <: Tuple](l: { type ElemLabels = Ls })
    */
   inline def elemLabels: Ls = compiletime.constValueTuple[Ls]
 
-extension [Es <: Tuple](es: Es)
+extension [Es <: Tuple](es: Es)(using Es containsOnly MadeElem)
   /**
    * Per-element [[hasAnnotation]] over a tuple of [[MadeElem]]s.
    */
-  transparent inline def hasAnnotations[A <: Annotation](using Es containsOnly MadeElem): Tuple =
-    ${ hasAnnotationsImpl[Es, A] }
+  transparent inline def hasAnnotations[A <: Annotation]: Tuple = ${ hasAnnotationsImpl[Es, A] }
 
   /**
    * Per-element [[getAnnotation]] over a tuple of [[MadeElem]]s.
    */
-  transparent inline def getAnnotations[A <: Annotation](using Es containsOnly MadeElem): Tuple =
-    ${ getAnnotationsImpl[Es, A] }
+  transparent inline def getAnnotations[A <: Annotation]: Tuple = ${ getAnnotationsImpl[Es, A] }
 
 @publicInBinary private def getAnnotationImpl[A <: Annotation: Type, M <: Tuple: Type](using quotes: Quotes)
   : Expr[Option[A]] =
