@@ -59,13 +59,21 @@ extension [Es <: Tuple](es: Es)(using Es containsOnly MadeElem)
   : Expr[Boolean] = Expr(getAnnotationImpl[A, M].isExprOf[Some[A]])
 
 @publicInBinary private def hasAnnotationsImpl[Es <: Tuple: Type, A <: Annotation: Type](using quotes: Quotes)
-  : Expr[Tuple] = Expr.ofTupleFromSeq:
-  traverseTuple(Type.of[Es]).map:
-    case '[type m <: Tuple; MadeElem { type Metadata = m }] => hasAnnotationImpl[A, m]
-    case _ => Expr(false)
+  : Expr[Tuple] =
+  import quotes.reflect.*
+  Expr.ofTupleFromSeq:
+    traverseTuple(Type.of[Es]).map:
+      case '[h] =>
+        TypeRepr.of[MadeElem.ExtractMeta[h]].dealias.asType match
+          case '[type m <: Tuple; m] => hasAnnotationImpl[A, m]
+          case _ => Expr(false)
 
 @publicInBinary private def getAnnotationsImpl[Es <: Tuple: Type, A <: Annotation: Type](using quotes: Quotes)
-  : Expr[Tuple] = Expr.ofTupleFromSeq:
-  traverseTuple(Type.of[Es]).map:
-    case '[type m <: Tuple; MadeElem { type Metadata = m }] => getAnnotationImpl[A, m]
-    case _ => Expr(None)
+  : Expr[Tuple] =
+  import quotes.reflect.*
+  Expr.ofTupleFromSeq:
+    traverseTuple(Type.of[Es]).map:
+      case '[h] =>
+        TypeRepr.of[MadeElem.ExtractMeta[h]].dealias.asType match
+          case '[type m <: Tuple; m] => getAnnotationImpl[A, m]
+          case _ => Expr(None)
