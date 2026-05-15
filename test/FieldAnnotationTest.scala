@@ -120,6 +120,36 @@ class FieldAnnotationTest extends munit.FunSuite:
     assertEquals(tag(y.hasAnnotation[Marker]), "no")
   }
 
+  // --- Plural tuple-of-elements queries ---
+
+  test("hasAnnotations returns tuple of singleton booleans") {
+    val mirror = Made.derived[AnnotatedFields]
+    val flags: (true, false, true) = mirror.elems.hasAnnotations[Marker]
+    assertEquals(flags, (true, false, true))
+  }
+
+  test("getAnnotations returns tuple of singleton Some/None") {
+    val mirror = Made.derived[AnnotatedFields]
+    val opts: (Some[Marker], None.type, Some[Marker]) = mirror.elems.getAnnotations[Marker]
+    assert(opts._1.value.isInstanceOf[Marker])
+    assertEquals(opts._2, None)
+    assert(opts._3.value.isInstanceOf[Marker])
+  }
+
+  test("hasAnnotations / getAnnotations narrow per-element") {
+    val mirror = Made.derived[FieldWithParamAnnotation]
+    val flags: (true, true) = mirror.elems.hasAnnotations[Tag]
+    val opts: (Some[Tag], Some[Tag]) = mirror.elems.getAnnotations[Tag]
+    assertEquals(flags, (true, true))
+    assertEquals(opts._1.value.value, "primary")
+    assertEquals(opts._2.value.value, "secondary")
+  }
+
+  test("hasAnnotations on EmptyTuple") {
+    val flags: EmptyTuple = EmptyTuple.hasAnnotations[Marker]
+    assertEquals(flags, EmptyTuple)
+  }
+
 // --- Fixtures ---
 
 class Marker extends MetaAnnotation
