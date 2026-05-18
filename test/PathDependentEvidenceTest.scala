@@ -74,14 +74,18 @@ class PathDependentEvidenceTest extends munit.FunSuite:
   test("hasAnnotations works on arbitrary tuple of refined types with Metadata member") {
     // Proves the extension is purely structural — no MadeElem/InputElem dependency.
     // Uses the same refinement shape that real mirrors produce (e.g. `MadeFieldElem { type Metadata = ... }`).
-    trait Holder { type Metadata <: Tuple }
+    trait Holder:
+      type Metadata <: Tuple
 
     val a: Holder { type Metadata = (Meta @PMarker) *: EmptyTuple } =
-      new Holder { type Metadata = (Meta @PMarker) *: EmptyTuple }
+      new Holder:
+        type Metadata = (Meta @PMarker) *: EmptyTuple
     val b: Holder { type Metadata = EmptyTuple } =
-      new Holder { type Metadata = EmptyTuple }
+      new Holder:
+        type Metadata = EmptyTuple
     val c: Holder { type Metadata = (Meta @PMarker) *: (Meta @PMarker) *: EmptyTuple } =
-      new Holder { type Metadata = (Meta @PMarker) *: (Meta @PMarker) *: EmptyTuple }
+      new Holder:
+        type Metadata = (Meta @PMarker) *: (Meta @PMarker) *: EmptyTuple
 
     val tup = (a, b, c)
     val flags: (true, false, true) = tup.hasAnnotations[PMarker]
