@@ -34,16 +34,16 @@ extension [Ls <: Tuple](l: { type ElemLabels = Ls })
    */
   inline def elemLabels: Ls = compiletime.constValueTuple[Ls]
 
-extension [Es <: Tuple](es: Es)(using Es containsOnly { type Metadata <: Tuple })
+extension (es: Tuple)(using es.type containsOnly { type Metadata <: Tuple })
   /**
    * Per-element [[hasAnnotation]] over a tuple of [[MadeElem]]s.
    */
-  transparent inline def hasAnnotations[A <: Annotation]: Tuple = ${ hasAnnotationsImpl[Es, A] }
+  transparent inline def hasAnnotations[A <: Annotation]: Tuple = ${ hasAnnotationsImpl[es.type, A] }
 
   /**
    * Per-element [[getAnnotation]] over a tuple of [[MadeElem]]s.
    */
-  transparent inline def getAnnotations[A <: Annotation]: Tuple = ${ getAnnotationsImpl[Es, A] }
+  transparent inline def getAnnotations[A <: Annotation]: Tuple = ${ getAnnotationsImpl[es.type, A] }
 
 @publicInBinary private def getAnnotationImpl[A <: Annotation: Type, M <: Tuple: Type](using quotes: Quotes)
   : Expr[Option[A]] =
@@ -61,11 +61,11 @@ extension [Es <: Tuple](es: Es)(using Es containsOnly { type Metadata <: Tuple }
 @publicInBinary private def hasAnnotationsImpl[Es <: Tuple: Type, A <: Annotation: Type](using quotes: Quotes)
   : Expr[Tuple] = Expr.ofTupleFromSeq:
   traverseTuple(Type.of[Es]).map:
-    case '[type m <: Tuple; Any { type Metadata = m }] => hasAnnotationImpl[A, m]
-    case _ => Expr(false)
+    case '[type m <: Tuple; { type Metadata = m }] =>
+      hasAnnotationImpl[A, m]
 
 @publicInBinary private def getAnnotationsImpl[Es <: Tuple: Type, A <: Annotation: Type](using quotes: Quotes)
   : Expr[Tuple] = Expr.ofTupleFromSeq:
   traverseTuple(Type.of[Es]).map:
-    case '[type m <: Tuple; Any { type Metadata = m }] => getAnnotationImpl[A, m]
-    case _ => Expr(None)
+    case '[type m <: Tuple; { type Metadata = m }] =>
+      getAnnotationImpl[A, m]
