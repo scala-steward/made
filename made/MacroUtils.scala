@@ -73,9 +73,11 @@ private[made] class MacroUtils[Q <: Quotes](using val quotes: Q):
       symbol.getAnnotation(TypeRepr.of[AT].typeSymbol).map(_.asExprOf[AT])
 
   def metaTypeOf(symbol: Symbol): Type[? <: Tuple] =
-    val userAnnots = symbol.annotations.iterator
+    val userAnnots = metaSymbolsOf(symbol).iterator
+      .flatMap(_.annotations.iterator)
       .filter(_.tpe <:< TypeRepr.of[MetaAnnotation])
       .map(annot => AnnotatedType(TypeRepr.of[Meta], annot).asType)
+
     val syntheticAnnot = Option.when(isRepeatedCtorParam(symbol)):
       AnnotatedType(TypeRepr.of[Meta], '{ new repeated }.asTerm).asType
     traverseTypes(userAnnots.concat(syntheticAnnot).toList)
@@ -88,6 +90,17 @@ private[made] class MacroUtils[Q <: Quotes](using val quotes: Q):
         case ValDef(_, Annotated(_, annot), _) => annot.tpe
       .exists: tpe =>
         tpe <:< TypeRepr.of[scala.annotation.internal.Repeated]
+
+  private def metaSymbolsOf(symbol: Symbol): List[Symbol] =
+    val ctorParam = for
+      owner <- List(symbol.maybeOwner)
+      if !owner.isNoSymbol
+      if owner.isClassDef
+      ctor = owner.primaryConstructor
+      if !ctor.isNoSymbol
+      ctorParam <- ctor.paramSymss.iterator.flatten.filterNot(_.isType).find(_.name == symbol.name)
+    yield ctorParam
+    symbol :: ctorParam
 
   def labelTypeOf(sym: Symbol, fallback: String): Type[? <: String] =
     val syms = Iterator(sym) ++ sym.allOverriddenSymbols
