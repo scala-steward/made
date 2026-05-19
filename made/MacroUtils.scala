@@ -44,6 +44,14 @@ def traverseTuple(tpe: Type[? <: Tuple])(using Quotes): List[Type[? <: AnyKind]]
   case '[EmptyTuple] => Nil
   case '[t *: ts] => Type.of[t] :: traverseTuple(Type.of[ts])
 
+extension (companion: Expr.type)
+  def ofRefinedTuple(exprs: List[Expr[?]])(using Quotes): Expr[Tuple] = exprs.runtimeChecked match
+    case Nil => '{ EmptyTuple }
+    case '{ $headExpr: h } :: tail =>
+      ofRefinedTuple(tail) match
+        case '{ type t <: Tuple; $tailExpr: t } =>
+          '{ ${ headExpr.asExprOf[h] } *: ${ tailExpr.asExprOf[t] } }
+
 def reportOnDuplicates(labels: Seq[(label: String, original: String)])(using Quotes): Unit =
   import quotes.reflect.*
   labels

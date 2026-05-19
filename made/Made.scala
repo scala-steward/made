@@ -379,7 +379,7 @@ object Made:
     (
       metaTypeOf(tSymbol),
       labelTypeOf(tSymbol, tSymbol.name.stripSuffix("$")), // find a better way than stripping $
-      Expr.ofTupleFromSeq(generatedElems),
+      Expr.ofRefinedTuple(generatedElems.toList),
     ).runtimeChecked match
       case (
             '[type meta <: Tuple; meta],
@@ -520,7 +520,7 @@ object Made:
 
             reportOnDuplicates(names)
 
-            Expr.ofTupleFromSeq(exprs) match
+            Expr.ofRefinedTuple(exprs.toList) match
               case '{ type mirroredElems <: Tuple; $mirroredElemsExpr: mirroredElems } =>
                 '{
                   new Made.Product:
@@ -584,7 +584,7 @@ object Made:
 
             reportOnDuplicates(names)
 
-            Expr.ofTupleFromSeq(exprs) match
+            Expr.ofRefinedTuple(exprs.toList) match
               case '{ type mirroredElems <: Tuple; $mirroredElemsExpr: mirroredElems } =>
                 '{
                   new Made.Sum:
