@@ -260,7 +260,7 @@ object Done:
           labelTypeOf(member, member.name),
           metaTypeOf(member),
           outputTpe,
-          Expr.ofTupleFromSeq(inputElems),
+          Expr.ofRefinedTuple(inputElems),
         ).runtimeChecked match
           case (
                 '[opTpe],
@@ -333,7 +333,7 @@ object Done:
     (
       labelTypeOf(tSymbol, tSymbol.name.stripSuffix("$")), // find a better way than stripping $
       metaTypeOf(tSymbol),
-      Expr.ofTupleFromSeq(operations),
+      Expr.ofRefinedTuple(operations),
     ).runtimeChecked match
       case (
             '[type label <: String; label],

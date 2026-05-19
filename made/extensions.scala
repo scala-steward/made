@@ -59,13 +59,13 @@ extension (es: Tuple)(using es.type containsOnly { type Metadata <: Tuple })
   : Expr[Boolean] = Expr(getAnnotationImpl[A, M].isExprOf[Some[A]])
 
 @publicInBinary private def hasAnnotationsImpl[Es <: Tuple: Type, A <: Annotation: Type](using quotes: Quotes)
-  : Expr[Tuple] = Expr.ofTupleFromSeq:
+  : Expr[Tuple] = Expr.ofRefinedTuple:
   traverseTuple(Type.of[Es]).map:
     case '[type m <: Tuple; { type Metadata = m }] =>
       hasAnnotationImpl[A, m]
 
 @publicInBinary private def getAnnotationsImpl[Es <: Tuple: Type, A <: Annotation: Type](using quotes: Quotes)
-  : Expr[Tuple] = Expr.ofTupleFromSeq:
+  : Expr[Tuple] = Expr.ofRefinedTuple:
   traverseTuple(Type.of[Es]).map:
     case '[type m <: Tuple; { type Metadata = m }] =>
       getAnnotationImpl[A, m]
