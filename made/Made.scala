@@ -548,7 +548,7 @@ object Made:
                 type mirroredElemTypes <: Tuple
                 type label <: String
 
-                $_ : Mirror.SumOf[T] {
+                $m: Mirror.SumOf[T] {
                   type MirroredLabel = label
                   type MirroredElemTypes = mirroredElemTypes
                 }
@@ -593,6 +593,7 @@ object Made:
                     type Metadata = meta
                     type Elems = mirroredElems
                     def elems: Elems = $mirroredElemsExpr
+                    def ordinal(value: T): Int = $m.ordinal(value)
 
                     type GeneratedElems = generatedElems
                     def generatedElems: GeneratedElems = $generatedElemsExpr
@@ -647,7 +648,9 @@ object Made:
    * @see [[MadeSubElem]]
    * @see [[MadeSubSingletonElem]]
    */
-  sealed trait Sum extends Made
+  sealed trait Sum extends Made:
+    /** Returns the zero-based index of `value`'s runtime subtype within [[Elems]]. */
+    def ordinal(value: Type): Int
 
   /**
    * Mirror for singleton types (objects and Unit).
