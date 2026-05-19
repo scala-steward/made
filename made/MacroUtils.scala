@@ -90,14 +90,15 @@ private[made] class MacroUtils[Q <: Quotes](using val quotes: Q):
   )
 
   private def metaSymbolsOf(symbol: Symbol): List[Symbol] =
-    val ctorParam =
-      val owner = symbol.maybeOwner
-      if owner.isNoSymbol || !owner.isClassDef then None
-      else
-        val ctor = owner.primaryConstructor
-        if ctor.isNoSymbol then None
-        else ctor.paramSymss.flatten.iterator.filterNot(_.isType).find(_.name == symbol.name)
-    symbol :: ctorParam.toList
+    val ctorParam = for
+      owner <- List(symbol.maybeOwner)
+      if !owner.isNoSymbol
+      if owner.isClassDef
+      ctor = owner.primaryConstructor
+      if !ctor.isNoSymbol
+      ctorParam <- ctor.paramSymss.iterator.flatten.filterNot(_.isType).find(_.name == symbol.name)
+    yield ctorParam
+    symbol :: ctorParam
 
   def labelTypeOf(sym: Symbol, fallback: String): Type[? <: String] =
     val syms = Iterator(sym) ++ sym.allOverriddenSymbols
