@@ -147,6 +147,12 @@ sealed trait MadeElem:
  * @see [[Made.Product]]
  */
 sealed trait MadeFieldElem extends MadeElem:
+  /** The type that declares this field (the outer/owning type). */
+  type OuterType
+
+  /** Reads this field's value from an instance of the declaring type. */
+  def apply(outer: OuterType): Type
+
   /**
    * Resolves a default value for this field using the following priority chain (first match wins):
    *
@@ -161,6 +167,12 @@ sealed trait MadeFieldElem extends MadeElem:
 
 object MadeFieldElem:
   type Of[T] = MadeFieldElem { type Type = T }
+  type OuterOf[Outer] = MadeFieldElem { type OuterType = Outer }
+
+// workaround for https://github.com/scala/scala3/issues/25245
+private sealed trait MadeFieldElemWorkaround[Outer, Elem] extends MadeFieldElem:
+  final type OuterType = Outer
+  final type Type = Elem
 
 /**
  * Element representing a non-singleton subtype in a sum type mirror.
@@ -210,12 +222,6 @@ object MadeSubSingletonElem:
  * @see [[made.annotation.generated]]
  */
 sealed trait GeneratedMadeElem extends MadeFieldElem:
-  /** The type that declares the [[generated]] member. */
-  type OuterType
-
-  /** Computes the generated value from an instance of the declaring type. */
-  def apply(outer: OuterType): Type
-
   /** Always `None`; generated members have no constructor defaults. */
   final def default: Option[Type] = None
 
@@ -335,12 +341,18 @@ object Made:
       (field.termRef.widen.asType, labelTypeOf(field, field.name), metaTypeOf(field)).runtimeChecked match
         case ('[fieldType], '[type elemLabel <: String; elemLabel], '[type fieldMeta <: Tuple; fieldMeta]) =>
           '{
-            new MadeFieldElem:
-              type Type = fieldType
+            new MadeFieldElemWorkaround[T, fieldType]:
               type Label = elemLabel
               type Metadata = fieldMeta
 
+              def apply(outer: T): fieldType = ${ '{ outer }.asTerm.select(field).asExprOf[fieldType] }
               def default = ${ defaultOf[fieldType](0, field) }
+            : MadeFieldElem {
+              type Type = fieldType
+              type Label = elemLabel
+              type Metadata = fieldMeta
+              type OuterType = T
+            }
           }
 
     def defaultOf[E: Type](index: Int, symbol: Symbol): Expr[Option[E]] = Expr.ofOption {
@@ -508,12 +520,19 @@ object Made:
                   (labelTypeOf(fieldSymbol, fieldSymbol.name), metaTypeOf(fieldSymbol)).runtimeChecked match
                     case ('[type elemLabel <: String; elemLabel], '[type meta <: Tuple; meta]) =>
                       val expr = '{
-                        new MadeFieldElem:
-                          type Type = fieldTpe
+                        new MadeFieldElemWorkaround[T, fieldTpe]:
                           type Label = elemLabel
                           type Metadata = meta
 
+                          def apply(outer: T): fieldTpe =
+                            ${ '{ outer }.asTerm.select(fieldSymbol).asExprOf[fieldTpe] }
                           def default = ${ defaultOf[fieldTpe](index, fieldSymbol) }
+                        : MadeFieldElem {
+                          type Type = fieldTpe
+                          type Label = elemLabel
+                          type Metadata = meta
+                          type OuterType = T
+                        }
                       }
                       (exprs :+ expr, names :+ (typeToString[elemLabel], fieldSymbol.name))
                 case _ => wontHappen
