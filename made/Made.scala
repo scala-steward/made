@@ -481,6 +481,8 @@ object Made:
 
                   def fromUnsafeArray(product: Array[Any]): T =
                     ${ newTFrom(List('{ product(0).asInstanceOf[fieldType] })) }
+                  def fromTuple(elems: ElemTypes): T =
+                    ${ newTFrom(List('{ elems.head.asInstanceOf[fieldType] })) }
                 : Made.ProductOf[T] {
                   type Label = label
                   type Metadata = meta
@@ -531,6 +533,7 @@ object Made:
 
                     def elems: Elems = $mirroredElemsExpr
                     def fromUnsafeArray(product: Array[Any]): T = $m.fromProduct(Tuple.fromArray(product))
+                    def fromTuple(elems: ElemTypes): T = $m.fromProduct(elems)
 
                     type GeneratedElems = generatedElems
                     def generatedElems: GeneratedElems = $generatedElemsExpr
@@ -632,6 +635,9 @@ object Made:
   sealed trait Product extends Made:
     /** Constructs an instance of `Type` from an untyped array of field values. */
     def fromUnsafeArray(product: Array[Any]): Type
+
+    /** Constructs an instance of `Type` from a typed tuple of field values. */
+    def fromTuple(elems: ElemTypes): Type
 
   /**
    * Mirror for sum types (sealed traits and enums).
