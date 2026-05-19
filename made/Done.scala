@@ -24,7 +24,7 @@ import scala.quoted.*
  * // done type members:
  * //   type Type = Service
  * //   type Label = "Service"
- * //   type Metadata = Meta
+ * //   type Metadata = EmptyTuple
  * //   type Operations = DoneOperation { ... "ping" ... } *: DoneOperation { ... "version" ... } *: EmptyTuple
  * }}}
  *
@@ -40,9 +40,9 @@ sealed trait Done:
   type Label <: String
 
   /**
-   * Annotation metadata on `T`, represented as an `AnnotatedType` chain wrapping the [[Meta]]
-   * base type. When no `MetaAnnotation` annotations are present, `Metadata = Meta`. When
-   * annotations are present, `Metadata` becomes `Meta @Ann1 @Ann2 ...`.
+   * Annotation metadata on `T`, represented as a [[Tuple]] of `Meta @ann` entries. When no
+   * `MetaAnnotation` annotations are present, `Metadata = EmptyTuple`. When annotations are
+   * present, `Metadata` becomes `(Meta @Ann1, Meta @Ann2, ...)`.
    */
   type Metadata <: Tuple
 
@@ -74,8 +74,8 @@ sealed trait DoneOperation:
   type Label <: String
 
   /**
-   * Annotation metadata on the member, represented as an `AnnotatedType` chain wrapping
-   * the [[Meta]] base type.
+   * Annotation metadata on the member, represented as a [[Tuple]] of `Meta @ann` entries.
+   * `EmptyTuple` when no `MetaAnnotation` annotations are present.
    */
   type Metadata <: Tuple
 
@@ -151,8 +151,9 @@ sealed trait InputElem:
   type Label <: String
 
   /**
-   * Annotation metadata on the parameter, represented as an `AnnotatedType` chain wrapping
-   * the [[Meta]] base type.
+   * Annotation metadata on the parameter, represented as a [[Tuple]] of `Meta @ann` entries.
+   * `EmptyTuple` when no `MetaAnnotation` annotations are present. Currently always
+   * `EmptyTuple` — parameter annotations are not yet captured by [[Done.derived]].
    */
   type Metadata <: Tuple
 

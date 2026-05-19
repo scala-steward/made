@@ -20,14 +20,14 @@ import scala.quoted.*
  *
  * case class User(name: String, age: Int)
  *
- * val mirror: Made.Of[User] = Made.derived[User]
+ * val mirror = Made.derived[User]
  * // mirror type members:
  * //   type Type = User
  * //   type Label = "User"
- * //   type Metadata = Meta
+ * //   type Metadata = EmptyTuple
  * //   type Elems = MadeFieldElem { ... } *: MadeFieldElem { ... } *: EmptyTuple
  *
- * val (nameFld, ageFld) = mirror.mirroredElems
+ * val (nameFld, ageFld) = mirror.elems
  * val user = mirror.fromUnsafeArray(Array("Alice", 30))
  * }}}
  *
@@ -618,8 +618,8 @@ object Made:
    * Produced by [[Made.derived]] when `T` is a case class, a zero-field
    * case class, or a value class (extends `AnyVal`).
    *
-   * [[Made.Elems]] is a tuple of [[MadeFieldElem]] representing each
-   * constructor parameter. [[Made.GeneratedElem]] is a tuple of
+   * [[Elems]] is a tuple of [[MadeFieldElem]] representing each
+   * constructor parameter. [[GeneratedElems]] is a tuple of
    * [[GeneratedMadeElem]] for any `@generated` members.
    *
    * @see [[Made]]
