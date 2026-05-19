@@ -1,6 +1,6 @@
 package made
 
-import made.annotation.{name, MetaAnnotation}
+import made.annotation.{name, repeated, MetaAnnotation}
 
 import scala.annotation.Annotation
 import scala.collection.immutable.List
@@ -72,22 +72,24 @@ private[made] class MacroUtils[Q <: Quotes](using val quotes: Q):
     def getAnnotationOf[AT <: Annotation: Type] =
       symbol.getAnnotation(TypeRepr.of[AT].typeSymbol).map(_.asExprOf[AT])
 
-  /**
-   * Reads `MetaAnnotation`-typed annotations from `symbol` AND, if `symbol` is a member of
-   * a class with a matching primary-constructor parameter, also from that constructor param.
-   *
-   * Rationale: in some compilation phases Scala 3 keeps annotations placed on case class
-   * parameters only on the constructor param symbol, not on the val accessor returned by
-   * `caseFields`. Reading both and unioning ensures `@transientDefault` / `@optionalParam`
-   * / `@whenAbsent` / `@name` are visible regardless of phase.
-   */
-  def metaTypeOf(symbol: Symbol): Type[? <: Tuple] = traverseTypes(
-    metaSymbolsOf(symbol).iterator
+  def metaTypeOf(symbol: Symbol): Type[? <: Tuple] =
+    val userAnnots = metaSymbolsOf(symbol).iterator
       .flatMap(_.annotations.iterator)
       .filter(_.tpe <:< TypeRepr.of[MetaAnnotation])
       .map(annot => AnnotatedType(TypeRepr.of[Meta], annot).asType)
-      .toList,
-  )
+
+    val syntheticAnnot = Option.when(isRepeatedCtorParam(symbol)):
+      AnnotatedType(TypeRepr.of[Meta], '{ new repeated }.asTerm).asType
+    traverseTypes(userAnnots.concat(syntheticAnnot).toList)
+
+  private def isRepeatedCtorParam(symbol: Symbol): Boolean = symbol.flags.is(Flags.CaseAccessor) &&
+    symbol.owner.primaryConstructor.paramSymss.iterator.flatten
+      .find(_.name == symbol.name)
+      .map(_.tree)
+      .collect:
+        case ValDef(_, Annotated(_, annot), _) => annot.tpe
+      .exists: tpe =>
+        tpe <:< TypeRepr.of[scala.annotation.internal.Repeated]
 
   private def metaSymbolsOf(symbol: Symbol): List[Symbol] =
     val ctorParam = for

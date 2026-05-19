@@ -20,14 +20,14 @@ import scala.quoted.*
  *
  * case class User(name: String, age: Int)
  *
- * val mirror: Made.Of[User] = Made.derived[User]
+ * val mirror = Made.derived[User]
  * // mirror type members:
  * //   type Type = User
  * //   type Label = "User"
- * //   type Metadata = Meta
+ * //   type Metadata = EmptyTuple
  * //   type Elems = MadeFieldElem { ... } *: MadeFieldElem { ... } *: EmptyTuple
  *
- * val (nameFld, ageFld) = mirror.mirroredElems
+ * val (nameFld, ageFld) = mirror.elems
  * val user = mirror.fromUnsafeArray(Array("Alice", 30))
  * }}}
  *
@@ -147,6 +147,12 @@ sealed trait MadeElem:
  * @see [[Made.Product]]
  */
 sealed trait MadeFieldElem extends MadeElem:
+  /** The type that declares this field (the outer/owning type). */
+  type OuterType
+
+  /** Reads this field's value from an instance of the declaring type. */
+  def apply(outer: OuterType): Type
+
   /**
    * Resolves a default value for this field using the following priority chain (first match wins):
    *
@@ -161,6 +167,12 @@ sealed trait MadeFieldElem extends MadeElem:
 
 object MadeFieldElem:
   type Of[T] = MadeFieldElem { type Type = T }
+  type OuterOf[Outer] = MadeFieldElem { type OuterType = Outer }
+
+// workaround for https://github.com/scala/scala3/issues/25245
+private sealed trait MadeFieldElemWorkaround[Outer, Elem] extends MadeFieldElem:
+  final type OuterType = Outer
+  final type Type = Elem
 
 /**
  * Element representing a non-singleton subtype in a sum type mirror.
@@ -210,12 +222,6 @@ object MadeSubSingletonElem:
  * @see [[made.annotation.generated]]
  */
 sealed trait GeneratedMadeElem extends MadeFieldElem:
-  /** The type that declares the [[generated]] member. */
-  type OuterType
-
-  /** Computes the generated value from an instance of the declaring type. */
-  def apply(outer: OuterType): Type
-
   /** Always `None`; generated members have no constructor defaults. */
   final def default: Option[Type] = None
 
@@ -335,12 +341,18 @@ object Made:
       (field.termRef.widen.asType, labelTypeOf(field, field.name), metaTypeOf(field)).runtimeChecked match
         case ('[fieldType], '[type elemLabel <: String; elemLabel], '[type fieldMeta <: Tuple; fieldMeta]) =>
           '{
-            new MadeFieldElem:
-              type Type = fieldType
+            new MadeFieldElemWorkaround[T, fieldType]:
               type Label = elemLabel
               type Metadata = fieldMeta
 
+              def apply(outer: T): fieldType = ${ '{ outer }.asTerm.select(field).asExprOf[fieldType] }
               def default = ${ defaultOf[fieldType](0, field) }
+            : MadeFieldElem {
+              type Type = fieldType
+              type Label = elemLabel
+              type Metadata = fieldMeta
+              type OuterType = T
+            }
           }
 
     def defaultOf[E: Type](index: Int, symbol: Symbol): Expr[Option[E]] = Expr.ofOption {
@@ -481,6 +493,8 @@ object Made:
 
                   def fromUnsafeArray(product: Array[Any]): T =
                     ${ newTFrom(List('{ product(0).asInstanceOf[fieldType] })) }
+                  def fromTuple(elems: ElemTypes): T =
+                    ${ newTFrom(List('{ elems.head.asInstanceOf[fieldType] })) }
                 : Made.ProductOf[T] {
                   type Label = label
                   type Metadata = meta
@@ -508,12 +522,19 @@ object Made:
                   (labelTypeOf(fieldSymbol, fieldSymbol.name), metaTypeOf(fieldSymbol)).runtimeChecked match
                     case ('[type elemLabel <: String; elemLabel], '[type meta <: Tuple; meta]) =>
                       val expr = '{
-                        new MadeFieldElem:
-                          type Type = fieldTpe
+                        new MadeFieldElemWorkaround[T, fieldTpe]:
                           type Label = elemLabel
                           type Metadata = meta
 
+                          def apply(outer: T): fieldTpe =
+                            ${ '{ outer }.asTerm.select(fieldSymbol).asExprOf[fieldTpe] }
                           def default = ${ defaultOf[fieldTpe](index, fieldSymbol) }
+                        : MadeFieldElem {
+                          type Type = fieldTpe
+                          type Label = elemLabel
+                          type Metadata = meta
+                          type OuterType = T
+                        }
                       }
                       (exprs :+ expr, names :+ (typeToString[elemLabel], fieldSymbol.name))
                 case _ => wontHappen
@@ -531,6 +552,7 @@ object Made:
 
                     def elems: Elems = $mirroredElemsExpr
                     def fromUnsafeArray(product: Array[Any]): T = $m.fromProduct(Tuple.fromArray(product))
+                    def fromTuple(elems: ElemTypes): T = $m.fromProduct(elems)
 
                     type GeneratedElems = generatedElems
                     def generatedElems: GeneratedElems = $generatedElemsExpr
@@ -548,7 +570,7 @@ object Made:
                 type mirroredElemTypes <: Tuple
                 type label <: String
 
-                $_ : Mirror.SumOf[T] {
+                $m: Mirror.SumOf[T] {
                   type MirroredLabel = label
                   type MirroredElemTypes = mirroredElemTypes
                 }
@@ -593,6 +615,7 @@ object Made:
                     type Metadata = meta
                     type Elems = mirroredElems
                     def elems: Elems = $mirroredElemsExpr
+                    def ordinal(value: T): Int = $m.ordinal(value)
 
                     type GeneratedElems = generatedElems
                     def generatedElems: GeneratedElems = $generatedElemsExpr
@@ -618,8 +641,8 @@ object Made:
    * Produced by [[Made.derived]] when `T` is a case class, a zero-field
    * case class, or a value class (extends `AnyVal`).
    *
-   * [[Made.Elems]] is a tuple of [[MadeFieldElem]] representing each
-   * constructor parameter. [[Made.GeneratedElem]] is a tuple of
+   * [[Elems]] is a tuple of [[MadeFieldElem]] representing each
+   * constructor parameter. [[GeneratedElems]] is a tuple of
    * [[GeneratedMadeElem]] for any `@generated` members.
    *
    * @see [[Made]]
@@ -632,6 +655,9 @@ object Made:
   sealed trait Product extends Made:
     /** Constructs an instance of `Type` from an untyped array of field values. */
     def fromUnsafeArray(product: Array[Any]): Type
+
+    /** Constructs an instance of `Type` from a typed tuple of field values. */
+    def fromTuple(elems: ElemTypes): Type
 
   /**
    * Mirror for sum types (sealed traits and enums).
@@ -647,7 +673,9 @@ object Made:
    * @see [[MadeSubElem]]
    * @see [[MadeSubSingletonElem]]
    */
-  sealed trait Sum extends Made
+  sealed trait Sum extends Made:
+    /** Returns the zero-based index of `value`'s runtime subtype within [[Elems]]. */
+    def ordinal(value: Type): Int
 
   /**
    * Mirror for singleton types (objects and Unit).

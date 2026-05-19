@@ -36,12 +36,14 @@ extension [Ls <: Tuple](l: { type ElemLabels = Ls })
 
 extension (es: Tuple)(using es.type containsOnly { type Metadata <: Tuple })
   /**
-   * Per-element [[hasAnnotation]] over a tuple of [[MadeElem]]s.
+   * Per-element [[hasAnnotation]] over a tuple whose entries each declare a `Metadata` type member
+   * (e.g. a tuple of [[MadeElem]]s, [[GeneratedMadeElem]]s, or a singleton `Made` instance's
+   * `Metadata` chain).
    */
   transparent inline def hasAnnotations[A <: Annotation]: Tuple = ${ hasAnnotationsImpl[es.type, A] }
 
   /**
-   * Per-element [[getAnnotation]] over a tuple of [[MadeElem]]s.
+   * Per-element [[getAnnotation]] over a tuple whose entries each declare a `Metadata` type member.
    */
   transparent inline def getAnnotations[A <: Annotation]: Tuple = ${ getAnnotationsImpl[es.type, A] }
 
