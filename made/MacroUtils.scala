@@ -72,12 +72,32 @@ private[made] class MacroUtils[Q <: Quotes](using val quotes: Q):
     def getAnnotationOf[AT <: Annotation: Type] =
       symbol.getAnnotation(TypeRepr.of[AT].typeSymbol).map(_.asExprOf[AT])
 
+  /**
+   * Reads `MetaAnnotation`-typed annotations from `symbol` AND, if `symbol` is a member of
+   * a class with a matching primary-constructor parameter, also from that constructor param.
+   *
+   * Rationale: in some compilation phases Scala 3 keeps annotations placed on case class
+   * parameters only on the constructor param symbol, not on the val accessor returned by
+   * `caseFields`. Reading both and unioning ensures `@transientDefault` / `@optionalParam`
+   * / `@whenAbsent` / `@name` are visible regardless of phase.
+   */
   def metaTypeOf(symbol: Symbol): Type[? <: Tuple] = traverseTypes(
-    symbol.annotations.iterator
+    metaSymbolsOf(symbol).iterator
+      .flatMap(_.annotations.iterator)
       .filter(_.tpe <:< TypeRepr.of[MetaAnnotation])
       .map(annot => AnnotatedType(TypeRepr.of[Meta], annot).asType)
       .toList,
   )
+
+  private def metaSymbolsOf(symbol: Symbol): List[Symbol] =
+    val ctorParam =
+      val owner = symbol.maybeOwner
+      if owner.isNoSymbol || !owner.isClassDef then None
+      else
+        val ctor = owner.primaryConstructor
+        if ctor.isNoSymbol then None
+        else ctor.paramSymss.flatten.iterator.filterNot(_.isType).find(_.name == symbol.name)
+    symbol :: ctorParam.toList
 
   def labelTypeOf(sym: Symbol, fallback: String): Type[? <: String] =
     val syms = Iterator(sym) ++ sym.allOverriddenSymbols
