@@ -1,6 +1,6 @@
 package made
 
-import made.annotation.{name, MetaAnnotation}
+import made.annotation.{name, repeated, MetaAnnotation}
 
 import scala.annotation.Annotation
 import scala.collection.immutable.List
@@ -72,12 +72,26 @@ private[made] class MacroUtils[Q <: Quotes](using val quotes: Q):
     def getAnnotationOf[AT <: Annotation: Type] =
       symbol.getAnnotation(TypeRepr.of[AT].typeSymbol).map(_.asExprOf[AT])
 
-  def metaTypeOf(symbol: Symbol): Type[? <: Tuple] = traverseTypes(
-    symbol.annotations.iterator
+  def metaTypeOf(symbol: Symbol): Type[? <: Tuple] =
+    val userAnnots = symbol.annotations.iterator
       .filter(_.tpe <:< TypeRepr.of[MetaAnnotation])
       .map(annot => AnnotatedType(TypeRepr.of[Meta], annot).asType)
-      .toList,
-  )
+    val syntheticAnnots =
+      if isRepeatedCtorParam(symbol) then Iterator(AnnotatedType(TypeRepr.of[Meta], '{ new repeated }.asTerm).asType)
+      else Iterator.empty
+    traverseTypes((userAnnots ++ syntheticAnnots).toList)
+
+  private def isRepeatedCtorParam(symbol: Symbol): Boolean =
+    if !symbol.flags.is(Flags.CaseAccessor) then false
+    else
+      symbol.owner.primaryConstructor.paramSymss.flatten
+        .find(_.name == symbol.name)
+        .exists(_.tree match
+          case v: ValDef =>
+            v.tpt match
+              case Annotated(_, annot) => annot.tpe <:< TypeRepr.of[scala.annotation.internal.Repeated]
+              case _ => false
+          case _ => false)
 
   def labelTypeOf(sym: Symbol, fallback: String): Type[? <: String] =
     val syms = Iterator(sym) ++ sym.allOverriddenSymbols
