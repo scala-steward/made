@@ -15,10 +15,12 @@ class ComplexDataStructuresTest extends munit.FunSuite:
         type Type = Int
         type Label = "id"
         type Metadata = EmptyTuple
+        type OuterType = WithList
       } *: MadeFieldElem {
         type Type = List[String]
         type Label = "items"
         type Metadata = EmptyTuple
+        type OuterType = WithList
       } *: EmptyTuple
     } = Made.derived[WithList]
 
@@ -36,6 +38,7 @@ class ComplexDataStructuresTest extends munit.FunSuite:
         type Type = Map[String, Int]
         type Label = "data"
         type Metadata = EmptyTuple
+        type OuterType = WithMap
       } *: EmptyTuple
     } = Made.derived[WithMap]
   }
@@ -47,10 +50,12 @@ class ComplexDataStructuresTest extends munit.FunSuite:
         type Type = Set[String]
         type Label = "tags"
         type Metadata = EmptyTuple
+        type OuterType = WithSetAndVector
       } *: MadeFieldElem {
         type Type = Vector[Double]
         type Label = "scores"
         type Metadata = EmptyTuple
+        type OuterType = WithSetAndVector
       } *: EmptyTuple
     } = Made.derived[WithSetAndVector]
   }
@@ -76,6 +81,7 @@ class ComplexDataStructuresTest extends munit.FunSuite:
         type Type = CDSInner
         type Label = "inner"
         type Metadata = EmptyTuple
+        type OuterType = CDSOuter
       } *: EmptyTuple
     } = Made.derived[CDSOuter]
   }
@@ -92,6 +98,7 @@ class ComplexDataStructuresTest extends munit.FunSuite:
         type Type = Option[List[String]]
         type Label = "items"
         type Metadata = EmptyTuple
+        type OuterType = WithOptionalList
       } *: EmptyTuple
     } = Made.derived[WithOptionalList]
   }
@@ -102,6 +109,7 @@ class ComplexDataStructuresTest extends munit.FunSuite:
         type Type = Option[Option[Int]]
         type Label = "value"
         type Metadata = EmptyTuple
+        type OuterType = NestedOption
       } *: EmptyTuple
     } = Made.derived[NestedOption]
   }
@@ -114,6 +122,7 @@ class ComplexDataStructuresTest extends munit.FunSuite:
         type Type = (String, Int)
         type Label = "pair"
         type Metadata = EmptyTuple
+        type OuterType = WithTuple
       } *: EmptyTuple
     } = Made.derived[WithTuple]
   }
@@ -132,6 +141,7 @@ class ComplexDataStructuresTest extends munit.FunSuite:
         type Type = Either[String, Int]
         type Label = "result"
         type Metadata = EmptyTuple
+        type OuterType = WithEither
       } *: EmptyTuple
     } = Made.derived[WithEither]
   }
@@ -208,10 +218,12 @@ class ComplexDataStructuresTest extends munit.FunSuite:
         type Type = String
         type Label = "first"
         type Metadata = EmptyTuple
+        type OuterType = CDSPair[String, Int]
       } *: MadeFieldElem {
         type Type = Int
         type Label = "second"
         type Metadata = EmptyTuple
+        type OuterType = CDSPair[String, Int]
       } *: EmptyTuple
     } = Made.derived[CDSPair[String, Int]]
   }
@@ -225,6 +237,7 @@ class ComplexDataStructuresTest extends munit.FunSuite:
         type Type = List[Int]
         type Label = "value"
         type Metadata = EmptyTuple
+        type OuterType = Bounded[List[Int]]
       } *: EmptyTuple
     } = Made.derived[Bounded[List[Int]]]
   }

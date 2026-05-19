@@ -12,10 +12,12 @@ class MadeTest extends munit.FunSuite:
         type Type = Long
         type Label = "id"
         type Metadata = EmptyTuple
+        type OuterType = SimpleCaseClass
       } *: MadeFieldElem {
         type Type = String
         type Label = "name"
         type Metadata = EmptyTuple
+        type OuterType = SimpleCaseClass
       } *: EmptyTuple
       type Metadata = EmptyTuple
     } = Made.derived[SimpleCaseClass]
@@ -39,6 +41,7 @@ class MadeTest extends munit.FunSuite:
         type Type = Int
         type Label = "a"
         type Metadata = EmptyTuple
+        type OuterType = Box[Int]
       } *: EmptyTuple
     } = Made.derived[Box[Int]]
   }
@@ -99,6 +102,7 @@ class MadeTest extends munit.FunSuite:
         type Type = Int
         type Label = "int"
         type Metadata = EmptyTuple
+        type OuterType = TransparentClass
       } *: EmptyTuple
     } = Made.derived[TransparentClass]
 
@@ -198,6 +202,7 @@ class MadeTest extends munit.FunSuite:
         type Type = String
         type Label = "str"
         type Metadata = EmptyTuple
+        type OuterType = HasGenerated
       } *: EmptyTuple
       type GeneratedElems = GeneratedMadeElem {
         type OuterType = HasGenerated
@@ -220,6 +225,7 @@ class MadeTest extends munit.FunSuite:
         type Type = List[Int]
         type Label = "fa"
         type Metadata = EmptyTuple
+        type OuterType = HKBox[List]
       } *: EmptyTuple
     } = Made.derived[HKBox[List]]
   }
@@ -250,6 +256,7 @@ class MadeTest extends munit.FunSuite:
         type Type = Recursive
         type Label = "r"
         type Metadata = EmptyTuple
+        type OuterType = Recursive.Next
       } *: EmptyTuple
     } = Made.derived[Recursive.Next]
   }
@@ -269,14 +276,17 @@ class MadeTest extends munit.FunSuite:
         type Type = Int
         type Label = "value"
         type Metadata = EmptyTuple
+        type OuterType = RecTree
       } *: MadeFieldElem {
         type Type = Option[RecTree]
         type Label = "left"
         type Metadata = EmptyTuple
+        type OuterType = RecTree
       } *: MadeFieldElem {
         type Type = Option[RecTree]
         type Label = "right"
         type Metadata = EmptyTuple
+        type OuterType = RecTree
       } *: EmptyTuple
     } = Made.derived[RecTree]
   }
