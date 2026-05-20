@@ -6,6 +6,7 @@ import scala.annotation.Annotation
 import scala.collection.immutable.List
 import scala.quoted.*
 
+// $COVERAGE-OFF$
 // like ValueOf but without the implicit search and boxing
 inline private[made] def singleValueOf[T <: scala.Singleton]: T = ${ singleValueOfImpl[T] }
 
@@ -111,3 +112,4 @@ private[made] class MacroUtils[Q <: Quotes](using val quotes: Q):
 
 private[made] given (quotes: Quotes) => Ordering[quotes.reflect.Position] =
   Ordering.by(pos => (pos.sourceFile.path, pos.start, pos.end))
+// $COVERAGE-ON$

@@ -291,6 +291,7 @@ object Made:
    */
   transparent inline given derived[T]: Of[T] = ${ derivedImpl[T] }
 
+  // $COVERAGE-OFF$
   private def derivedImpl[T: Type](using quotes: Quotes): Expr[Made.Of[T]] =
     import quotes.reflect.*
     val utils = new MacroUtils[quotes.type]
@@ -634,6 +635,7 @@ object Made:
         deriveSingleton orElse deriveTransparent orElse deriveValueClass orElse deriveProduct orElse deriveSum getOrElse {
           report.errorAndAbort(s"Unsupported Mirror type for ${tTpe.show}")
         }
+  // $COVERAGE-ON$
 
   /**
    * Mirror for product types (case classes and value classes).
