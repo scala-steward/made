@@ -64,15 +64,27 @@ private[made] class MacroUtils[Q <: Quotes](using val quotes: Q):
   import quotes.reflect.*
 
   extension (symbol: Symbol)
-    /** Annotations on the symbol with `AnnotationAggregate` annotations recursively expanded. */
-    def expandedAnnotations: List[Term] = expandAggregates(symbol.annotations)
+    /**
+     * Symbols whose annotations are considered to "belong" to this symbol: the symbol itself,
+     * the matching constructor parameter of its owning class (for case class accessors), and all
+     * symbols overridden by this one.
+     */
+    def annotationSymbols: List[Symbol] =
+      metaSymbolsOf(symbol) ::: symbol.allOverriddenSymbols.toList
+
+    /**
+     * Annotations on `annotationSymbols` with `AnnotationAggregate` annotations recursively
+     * expanded.
+     */
+    def expandedAnnotations: List[Term] =
+      expandAggregates(symbol.annotationSymbols.flatMap(_.annotations))
 
     def hasAnnotationOf[AT <: Annotation: Type] =
       val at = TypeRepr.of[AT]
       symbol.expandedAnnotations.exists(_.tpe <:< at)
 
     def hasOrInheritsAnnotationOf[AT <: Annotation: Type] =
-      symbol.hasAnnotationOf[AT] || symbol.allOverriddenSymbols.exists(_.hasAnnotationOf[AT])
+      symbol.hasAnnotationOf[AT]
 
     def getAnnotationOf[AT <: Annotation: Type] =
       val at = TypeRepr.of[AT]
@@ -131,8 +143,7 @@ private[made] class MacroUtils[Q <: Quotes](using val quotes: Q):
     annots.flatMap(expand)
 
   def metaTypeOf(symbol: Symbol): Type[? <: Tuple] =
-    val userAnnots = metaSymbolsOf(symbol).iterator
-      .flatMap(s => expandAggregates(s.annotations).iterator)
+    val userAnnots = symbol.expandedAnnotations.iterator
       .filter(_.tpe <:< TypeRepr.of[MetaAnnotation])
       .map(annot => AnnotatedType(TypeRepr.of[Meta], annot).asType)
 
