@@ -198,6 +198,7 @@ object Done:
   private sealed trait DoneOperationWorkaround[Outer] extends DoneOperation:
     final type OuterType = Outer
 
+  // $COVERAGE-OFF$
   private def derivedImpl[T: Type](using quotes: Quotes): Expr[Done.Of[T]] =
     import quotes.reflect.*
     val utils = new MacroUtils[quotes.type]
@@ -350,3 +351,4 @@ object Done:
 
             override val operations: Operations = $operationsExpr
         }
+// $COVERAGE-ON$

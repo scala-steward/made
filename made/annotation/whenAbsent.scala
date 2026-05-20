@@ -22,6 +22,7 @@ class whenAbsent[+T](v: => T) extends MetaAnnotation:
 object whenAbsent:
   inline def value[T]: T = ${ valueImpl[T] }
 
+  // $COVERAGE-OFF$
   private def valueImpl[T: Type](using quotes: Quotes): Expr[T] =
     import quotes.reflect.*
 
@@ -53,3 +54,4 @@ object whenAbsent:
       case _ =>
         report.error("whenAbsent.value can only be used inside a parameter annotated with @whenAbsent")
         '{ ??? }
+// $COVERAGE-ON$

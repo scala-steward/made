@@ -47,6 +47,7 @@ extension (es: Tuple)(using es.type containsOnly { type Metadata <: Tuple })
    */
   transparent inline def getAnnotations[A <: Annotation]: Tuple = ${ getAnnotationsImpl[es.type, A] }
 
+// $COVERAGE-OFF$
 @publicInBinary private def getAnnotationImpl[A <: Annotation: Type, M <: Tuple: Type](using quotes: Quotes)
   : Expr[Option[A]] =
   import quotes.reflect.*
@@ -71,3 +72,4 @@ extension (es: Tuple)(using es.type containsOnly { type Metadata <: Tuple })
   traverseTuple(Type.of[Es]).map:
     case '[type m <: Tuple; { type Metadata = m }] =>
       getAnnotationImpl[A, m]
+// $COVERAGE-ON$
