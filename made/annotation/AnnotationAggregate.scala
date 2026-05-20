@@ -36,6 +36,7 @@ trait AnnotationAggregate extends StaticAnnotation:
 
   inline protected def reifyAggregated: List[StaticAnnotation] = ${ reifyAggregatedImpl }
 
+// $COVERAGE-OFF$
 @publicInBinary
 private def reifyAggregatedImpl(using quotes: Quotes): Expr[List[StaticAnnotation]] =
   import quotes.reflect.*
@@ -56,3 +57,4 @@ private def reifyAggregatedImpl(using quotes: Quotes): Expr[List[StaticAnnotatio
     .toList
   if annotExprs.isEmpty then report.warning("no aggregated annotations found on enclosing method")
   Expr.ofList(annotExprs)
+// $COVERAGE-ON$
