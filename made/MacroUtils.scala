@@ -2,7 +2,7 @@ package made
 
 import made.annotation.{name, repeated, AnnotationAggregate, MetaAnnotation}
 
-import scala.annotation.{Annotation, StaticAnnotation}
+import scala.annotation.{tailrec, Annotation, StaticAnnotation}
 import scala.collection.immutable.List
 import scala.quoted.*
 
@@ -163,9 +163,16 @@ private[made] class MacroUtils[Q <: Quotes](using val quotes: Q):
   def labelTypeOf(sym: Symbol, fallback: String): Type[? <: String] =
     val syms = Iterator(sym) ++ sym.allOverriddenSymbols
     val res = syms.find(_.hasAnnotationOf[name]).flatMap(_.getAnnotationOf[name])
-    stringToType(res match
-      case Some('{ new `name`($value) }) => value.valueOrAbort
-      case _ => fallback)
+    stringToType(res.flatMap(extractNameArg).getOrElse(fallback))
+
+  private def extractNameArg(annot: Expr[name]): Option[String] =
+    @tailrec def loop(stack: List[Term]): Option[String] = stack match
+      case Nil => None
+      case Literal(StringConstant(s)) :: _ => Some(s)
+      case Apply(fun, args) :: rest => loop(fun :: args ::: rest)
+      case TypeApply(fun, _) :: rest => loop(fun :: rest)
+      case _ :: rest => loop(rest)
+    loop(annot.asTerm :: Nil)
 
 private[made] given (quotes: Quotes) => Ordering[quotes.reflect.Position] =
   Ordering.by(pos => (pos.sourceFile.path, pos.start, pos.end))

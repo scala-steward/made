@@ -22,9 +22,9 @@ import scala.quoted.*
  *   }
  * }}}
  *
- * Made's annotation lookup extensions ([[made.MacroUtils.hasAnnotationOf]],
- * [[made.MacroUtils.getAnnotationOf]], `labelTypeOf`, `metaTypeOf`) automatically expand
- * aggregates so that downstream code sees the underlying annotations directly.
+ * Made's annotation lookup machinery (`hasAnnotation`/`getAnnotation` on mirror elements,
+ * label resolution and metadata) automatically expands aggregates so that downstream code
+ * sees the underlying annotations directly.
  */
 trait AnnotationAggregate extends StaticAnnotation:
 
