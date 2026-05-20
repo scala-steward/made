@@ -9,10 +9,8 @@ class AnnotationAggregateTest extends munit.FunSuite:
   test("aggregate expands to inner @name in labels") {
     val mirror = Made.derived[AggregateWithName]
     val x *: y *: EmptyTuple = mirror.elems
-    val xLabel = compiletime.constValue[x.Label]
-    val yLabel = compiletime.constValue[y.Label]
-    assertEquals(xLabel, "_id")
-    assertEquals(yLabel, "data")
+    assertEquals(x.label, "_id")
+    assertEquals(y.label, "data")
   }
 
   test("aggregate expands to inner meta annotation in metadata") {
@@ -24,8 +22,7 @@ class AnnotationAggregateTest extends munit.FunSuite:
   test("aggregate with constructor param substitutes value") {
     val mirror = Made.derived[AggregateWithParam]
     val x *: EmptyTuple = mirror.elems
-    val xLabel = compiletime.constValue[x.Label]
-    assertEquals(xLabel, "custom_name")
+    assertEquals(x.label, "custom_name")
   }
 
   test("hasAnnotation matches inner annotation from aggregate") {
