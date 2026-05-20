@@ -1,8 +1,8 @@
 package made
 
-import made.annotation.{name, repeated, MetaAnnotation}
+import made.annotation.{name, repeated, AnnotationAggregate, MetaAnnotation}
 
-import scala.annotation.Annotation
+import scala.annotation.{tailrec, Annotation, StaticAnnotation}
 import scala.collection.immutable.List
 import scala.quoted.*
 
@@ -64,18 +64,75 @@ private[made] class MacroUtils[Q <: Quotes](using val quotes: Q):
   import quotes.reflect.*
 
   extension (symbol: Symbol)
+    /** Annotations on the symbol with `AnnotationAggregate` annotations recursively expanded. */
+    def expandedAnnotations: List[Term] = expandAggregates(symbol.annotations)
+
     def hasAnnotationOf[AT <: Annotation: Type] =
-      symbol.hasAnnotation(TypeRepr.of[AT].typeSymbol)
+      val at = TypeRepr.of[AT]
+      symbol.expandedAnnotations.exists(_.tpe <:< at)
 
     def hasOrInheritsAnnotationOf[AT <: Annotation: Type] =
       symbol.hasAnnotationOf[AT] || symbol.allOverriddenSymbols.exists(_.hasAnnotationOf[AT])
 
     def getAnnotationOf[AT <: Annotation: Type] =
-      symbol.getAnnotation(TypeRepr.of[AT].typeSymbol).map(_.asExprOf[AT])
+      val at = TypeRepr.of[AT]
+      symbol.expandedAnnotations.find(_.tpe <:< at).map(_.asExprOf[AT])
+
+  def expandAggregates(annots: List[Term]): List[Term] =
+    val aggregateTpe = TypeRepr.of[AnnotationAggregate]
+    val staticTpe = TypeRepr.of[StaticAnnotation]
+
+    def collectArgs(annot: Term): (List[TypeRepr], List[Term]) =
+      def loop(t: Term, vAcc: List[Term]): (List[TypeRepr], List[Term]) = t match
+        case Apply(fun, args) => loop(fun, args ++ vAcc)
+        case TypeApply(fun, tArgs) =>
+          val (_, vs) = loop(fun, vAcc)
+          (tArgs.map(_.tpe), vs)
+        case Select(New(tpt), _) => (tpt.tpe.typeArgs, vAcc)
+        case _ => (Nil, vAcc)
+      loop(annot, Nil)
+
+    def substituteRefs(term: Term, valueMap: Map[Symbol, Term]): Term =
+      val byName: Map[String, Term] = valueMap.map((sym, t) => sym.name -> t)
+      val tr = new TreeMap:
+        override def transformTerm(tree: Term)(owner: Symbol): Term = tree match
+          case id: Ident if byName.contains(id.name) => byName(id.name)
+          case Select(This(_), n) if byName.contains(n) => byName(n)
+          case other => super.transformTerm(other)(owner)
+      tr.transformTerm(term)(Symbol.spliceOwner)
+
+    def rebuildAnnot(inner: Term, valueMap: Map[Symbol, Term]): Term =
+      val annotCls = inner.tpe.typeSymbol
+      val ctor = annotCls.primaryConstructor
+      val (_, rawArgs) = collectArgs(inner)
+      val concreteArgs = rawArgs.map(substituteRefs(_, valueMap))
+      val classTpe = annotCls.typeRef
+      val newTree: Term = New(Inferred(classTpe))
+      val selectedCtor: Term = Select(newTree, ctor)
+      val typeArgs = inner.tpe.typeArgs
+      val withTypeArgs: Term =
+        if typeArgs.isEmpty then selectedCtor
+        else TypeApply(selectedCtor, typeArgs.map(t => Inferred(t)))
+      Apply(withTypeArgs, concreteArgs)
+
+    def expand(annot: Term): List[Term] =
+      if !(annot.tpe <:< aggregateTpe) then List(annot)
+      else
+        val cls = annot.tpe.typeSymbol
+        cls.declaredMethods.find(_.name == "aggregated") match
+          case None => List(annot)
+          case Some(aggMethod) =>
+            val valueParams = cls.primaryConstructor.paramSymss.flatten.filterNot(_.isType)
+            val (_, outerValueArgs) = collectArgs(annot)
+            val valueMap: Map[Symbol, Term] = valueParams.zip(outerValueArgs).toMap
+            val rawInner = aggMethod.annotations.filter(_.tpe <:< staticTpe)
+            rawInner.flatMap(inner => expand(rebuildAnnot(inner, valueMap)))
+
+    annots.flatMap(expand)
 
   def metaTypeOf(symbol: Symbol): Type[? <: Tuple] =
     val userAnnots = metaSymbolsOf(symbol).iterator
-      .flatMap(_.annotations.iterator)
+      .flatMap(s => expandAggregates(s.annotations).iterator)
       .filter(_.tpe <:< TypeRepr.of[MetaAnnotation])
       .map(annot => AnnotatedType(TypeRepr.of[Meta], annot).asType)
 
@@ -106,9 +163,16 @@ private[made] class MacroUtils[Q <: Quotes](using val quotes: Q):
   def labelTypeOf(sym: Symbol, fallback: String): Type[? <: String] =
     val syms = Iterator(sym) ++ sym.allOverriddenSymbols
     val res = syms.find(_.hasAnnotationOf[name]).flatMap(_.getAnnotationOf[name])
-    stringToType(res match
-      case Some('{ new `name`($value) }) => value.valueOrAbort
-      case _ => fallback)
+    stringToType(res.flatMap(extractNameArg).getOrElse(fallback))
+
+  private def extractNameArg(annot: Expr[name]): Option[String] =
+    @tailrec def loop(stack: List[Term]): Option[String] = stack match
+      case Nil => None
+      case Literal(StringConstant(s)) :: _ => Some(s)
+      case Apply(fun, args) :: rest => loop(fun :: args ::: rest)
+      case TypeApply(fun, _) :: rest => loop(fun :: rest)
+      case _ :: rest => loop(rest)
+    loop(annot.asTerm :: Nil)
 
 private[made] given (quotes: Quotes) => Ordering[quotes.reflect.Position] =
   Ordering.by(pos => (pos.sourceFile.path, pos.start, pos.end))

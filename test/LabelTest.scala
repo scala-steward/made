@@ -88,6 +88,12 @@ class LabelTest extends munit.FunSuite:
     assertEquals(field.label, "customName")
   }
 
+  test("elem label from @name subclass") {
+    val mirror = Made.derived[SubclassedNameField]
+    val field *: EmptyTuple = mirror.elems
+    assertEquals(field.label, "_id")
+  }
+
   // --- elemLabels extension ---
 
   test("elemLabels for product") {
@@ -175,6 +181,9 @@ class LabelTest extends munit.FunSuite:
 
 @name("custom")
 case class NamedProduct(x: Int)
+
+class subclassedName(s: String) extends name(s)
+case class SubclassedNameField(@subclassedName("_id") id: String)
 
 case class LabelProduct(x: Int, y: String, z: Boolean)
 case class LabelNamedFields(@name("renamed_a") a: Int, b: String)
