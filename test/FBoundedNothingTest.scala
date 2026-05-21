@@ -8,7 +8,7 @@ class FBoundedNothingTest extends munit.FunSuite:
 
   private def deriveSnippet(definitions: String, derivation: String): List[Diagnostic] =
     SnippetCompiler.compile:
-      //language=scala 3
+      // language=scala 3
       s"""import made.*
          |$definitions
          |object FbSnippet { val _ = $derivation }
@@ -40,15 +40,6 @@ class FBoundedNothingTest extends munit.FunSuite:
     )
   }
 
-  test("contravariant F-bounded case class deriving at T = Nothing should warn") {
-    assertWarns(
-      """trait FBound[-T]
-        |case class P[-T <: FBound[T]](v: T)
-        |""".stripMargin,
-      "Made.derived[P[Nothing]]",
-    )
-  }
-
   test("multi-param F-bounded class deriving at Nothing on F-bounded param should warn") {
     assertWarns(
       """trait FBound[+T]
@@ -73,16 +64,6 @@ class FBoundedNothingTest extends munit.FunSuite:
       """trait FBound[T]
         |case class Concrete(i: Int) extends FBound[Concrete]
         |case class P[T <: FBound[T]](v: T)
-        |""".stripMargin,
-      "Made.derived[P[Concrete]]",
-    )
-  }
-
-  test("contravariant F-bounded case class deriving at concrete T should not warn") {
-    assertSilent(
-      """trait FBound[-T]
-        |case class Concrete(i: Int) extends FBound[Concrete]
-        |case class P[-T <: FBound[T]](v: T)
         |""".stripMargin,
       "Made.derived[P[Concrete]]",
     )

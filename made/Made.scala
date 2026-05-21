@@ -527,7 +527,8 @@ object Made:
                   case TypeBounds(lo, hi) :: rest => containsTypeRef(lo :: hi :: rest, sym)
                   case AndType(l, r) :: rest => containsTypeRef(l :: r :: rest, sym)
                   case OrType(l, r) :: rest => containsTypeRef(l :: r :: rest, sym)
-                  case MatchType(bound, scrutinee, cases) :: rest => containsTypeRef(bound :: scrutinee :: cases ::: rest, sym)
+                  case MatchType(bound, scrutinee, cases) :: rest =>
+                    containsTypeRef(bound :: scrutinee :: cases ::: rest, sym)
                   case (tl: TypeLambda) :: rest => containsTypeRef(tl.paramBounds ::: tl.resType :: rest, sym)
                   case _ :: rest => containsTypeRef(rest, sym)
 
