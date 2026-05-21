@@ -4,6 +4,7 @@ import dotty.tools.dotc.Driver
 import dotty.tools.dotc.reporting.{Diagnostic, StoreReporter}
 
 import java.nio.file.{Files, Path}
+import scala.util.Using
 
 /**
  * Compiles ad-hoc Scala snippets in-process via `dotty.tools.dotc.Driver` and exposes the raw
@@ -42,7 +43,9 @@ object SnippetCompiler:
       deleteRecursively(outDir)
 
   private def deleteRecursively(p: Path): Unit =
-    if Files.exists(p) then Files.walk(p).sorted(java.util.Comparator.reverseOrder).forEach(Files.deleteIfExists(_))
+    if Files.exists(p) then
+      Using.resource(Files.walk(p)): stream =>
+        stream.sorted(java.util.Comparator.reverseOrder).nn.forEach(Files.deleteIfExists(_))
 
   extension (diags: List[Diagnostic])
     /** True iff any diagnostic's message contains `substring`. */

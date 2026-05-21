@@ -88,6 +88,15 @@ class FBoundedNothingTest extends munit.FunSuite:
     )
   }
 
+  test("F-bound inside intersection bound deriving at Nothing should warn") {
+    assertWarns(
+      """trait FBound[+T]
+        |case class P[+T <: FBound[T] & Serializable](v: T)
+        |""".stripMargin,
+      "Made.derived[P[Nothing]]",
+    )
+  }
+
   test("non-F-bounded case class deriving at T = Nothing should not warn") {
     assertSilent(
       "case class P[+T](v: T)",

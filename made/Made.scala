@@ -523,8 +523,12 @@ object Made:
                   case head :: _ if head.typeSymbol == sym => true
                   case AppliedType(tycon, args) :: rest => containsTypeRef(tycon :: args ::: rest, sym)
                   case Refinement(parent, _, refined) :: rest => containsTypeRef(parent :: refined :: rest, sym)
-                  case AnnotatedType(t, _) :: rest => containsTypeRef(t :: rest, sym)
+                  case AnnotatedType(inner, _) :: rest => containsTypeRef(inner :: rest, sym)
                   case TypeBounds(lo, hi) :: rest => containsTypeRef(lo :: hi :: rest, sym)
+                  case AndType(l, r) :: rest => containsTypeRef(l :: r :: rest, sym)
+                  case OrType(l, r) :: rest => containsTypeRef(l :: r :: rest, sym)
+                  case MatchType(bound, scrutinee, cases) :: rest => containsTypeRef(bound :: scrutinee :: cases ::: rest, sym)
+                  case (tl: TypeLambda) :: rest => containsTypeRef(tl.paramBounds ::: tl.resType :: rest, sym)
                   case _ :: rest => containsTypeRef(rest, sym)
 
                 constructor.leadingTypeParams.exists:
