@@ -1,4 +1,4 @@
-//> using scala 3.8.4-RC2
+//> using scala 3.8.4-RC3
 
 //> using test.dep org.scalameta::munit::1.3.0
 
