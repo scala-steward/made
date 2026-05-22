@@ -2,7 +2,7 @@ package made
 
 import made.annotation.*
 
-import scala.annotation.implicitNotFound
+import scala.annotation.{implicitNotFound, tailrec}
 import scala.deriving.Mirror
 import scala.quoted.*
 
@@ -306,7 +306,7 @@ object Made:
       _ = if !(member.isValDef || member.isDefDef) then
         report.errorAndAbort(
           "@generated can only be applied to vals and defs.",
-          member.pos.getOrElse(Position.ofMacroExpansion),
+          member.pos.getOrElse(tSymbol.pos.getOrElse(Position.ofMacroExpansion)),
         )
       _ = member.paramSymss match
         case Nil => // no parameters, it's a val or a def without parameters
@@ -516,10 +516,41 @@ object Made:
                 }
               } =>
 
+            val hasFBound = tSymbol.tree match
+              case ClassDef(_, constructor, _, _, _) =>
+                @tailrec def containsTypeRef(stack: List[TypeRepr], sym: Symbol): Boolean = stack match
+                  case Nil => false
+                  case head :: _ if head.typeSymbol == sym => true
+                  case AppliedType(tycon, args) :: rest => containsTypeRef(tycon :: args ::: rest, sym)
+                  case Refinement(parent, _, refined) :: rest => containsTypeRef(parent :: refined :: rest, sym)
+                  case AnnotatedType(inner, _) :: rest => containsTypeRef(inner :: rest, sym)
+                  case TypeBounds(lo, hi) :: rest => containsTypeRef(lo :: hi :: rest, sym)
+                  case AndType(l, r) :: rest => containsTypeRef(l :: r :: rest, sym)
+                  case OrType(l, r) :: rest => containsTypeRef(l :: r :: rest, sym)
+                  case MatchType(bound, scrutinee, cases) :: rest =>
+                    containsTypeRef(bound :: scrutinee :: cases ::: rest, sym)
+                  case (tl: TypeLambda) :: rest => containsTypeRef(tl.paramBounds ::: tl.resType :: rest, sym)
+                  case _ :: rest => containsTypeRef(rest, sym)
+
+                constructor.leadingTypeParams.exists:
+                  case tp @ TypeDef(_, TypeBoundsTree(lo, hi)) => containsTypeRef(hi.tpe :: Nil, tp.symbol)
+                  case tp @ TypeDef(_, tt: TypeTree) => containsTypeRef(tt.tpe :: Nil, tp.symbol)
+                  case _ => false
+              case _ => false
+
             val (exprs, names) = tSymbol.caseFields.zipWithIndex
               .zip(traverseTuple(Type.of[mirroredElemTypes]))
               .foldLeft((Vector.empty[Expr[?]], Vector.empty[(label: String, original: String)])):
                 case ((exprs, names), ((fieldSymbol, index), '[fieldTpe])) =>
+                  if hasFBound && TypeRepr.of[fieldTpe] =:= TypeRepr.of[Nothing] then
+                    report.warning(
+                      s"Field '${fieldSymbol.name}' of F-bounded case class ${tSymbol.fullName} resolves " +
+                        "to Nothing at this derivation site. The compiler-synthesized " +
+                        "Mirror.Product.fromProduct on F-bounded case classes emits `.asInstanceOf[Nothing]` " +
+                        "regardless of type-parameter substitution and will throw ClassCastException at " +
+                        "runtime when reading. See scala/scala3#26132.",
+                      fieldSymbol.pos.getOrElse(tSymbol.pos.getOrElse(Position.ofMacroExpansion)),
+                    )
                   (labelTypeOf(fieldSymbol, fieldSymbol.name), metaTypeOf(fieldSymbol)).runtimeChecked match
                     case ('[type elemLabel <: String; elemLabel], '[type meta <: Tuple; meta]) =>
                       val expr = '{
