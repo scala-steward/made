@@ -127,13 +127,15 @@ The product example above uses `value.productIterator` to read field values. For
 `MadeFieldElem` exposes `def apply(outer: OuterType): Type` — a typed accessor that returns the field's value from
 an instance of the declaring type. `OuterType` is fixed to the mirrored type, so the call type-checks without casts:
 
-```scala
+```scala 3 sc-name:fieldelem-apply sc-compile-with:user
+import made.*
+
 val m = Made.derived[User]
 val name *: age *: EmptyTuple = m.elems
 
 val u = User("Alice", 30)
-name.apply(u)  // : String  = "Alice"
-age.apply(u)   // : Int     = 30
+name.apply(u) // : String  = "Alice"
+age.apply(u) // : Int     = 30
 ```
 
 The accessor is generated at macro expansion using a typed `select`, so it has the same cost as a direct field
@@ -146,10 +148,12 @@ types, and recursive ADTs.
 and pairs with `productIterator` on the read side. For a typed alternative, `fromTuple(elems: ElemTypes): Type` accepts
 a tuple whose shape matches `ElemTypes` exactly:
 
-```scala
+```scala 3 sc-name:product-fromtuple sc-compile-with:user
+import made.*
+
 val m = Made.derived[User]
 
-m.fromTuple(("Alice", 30))   // : User
+m.fromTuple(("Alice", 30)) // : User
 ```
 
 `fromTuple` is the inverse of `Tuple.fromProduct` and avoids the `Array[Any]` boxing of `fromUnsafeArray`. Use it when
