@@ -149,11 +149,11 @@ class LabelTest extends munit.FunSuite:
     assertEquals(labels, "customName" *: EmptyTuple)
   }
 
-//  test("elemLabels for mixed ADT") {
-//    val mirror = Made.derived[LabelMixed]
-//    val labels: ("Leaf", "Branch") = mirror.elemLabels
-//    assertEquals(labels, ("Leaf", "Branch"))
-//  }
+  test("elemLabels for mixed ADT") {
+    val mirror = Made.derived[LabelMixed]
+    val labels: ("Branch", "Leaf") = mirror.elemLabels
+    assertEquals(labels, ("Branch", "Leaf"))
+  }
 
   // --- elem label matches elemLabels ---
 
@@ -165,16 +165,6 @@ class LabelTest extends munit.FunSuite:
     assertEquals(labels._2, y.label)
     assertEquals(labels._3, z.label)
   }
-
-  // --- elem label from mapOnly matches elemLabels ---
-//
-//  test("elem label from mapOnly matches elemLabels") {
-//    val mirror = Made.derived[LabelProduct]
-//    val labels =
-//      mirror.elems.mapOnly[MadeElem { type Label <: String }]([m <: MadeElem { type Label <: String }] => m => m.label)
-//    val elemLabels = mirror.elemLabels
-//    assertEquals(labels, elemLabels)
-//  }
 
 // --- Fixtures ---
 
