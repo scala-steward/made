@@ -121,6 +121,41 @@ The key Made-specific insight here is that `elems` gives you runtime `MadeFieldE
 uses `constValueTuple` for labels (same as standard Mirror), the runtime element objects become essential when you need
 metadata, defaults, or annotations - capabilities that standard Mirror lacks entirely.
 
+### Reading Fields via `MadeFieldElem#apply`
+
+The product example above uses `value.productIterator` to read field values. For a typed alternative, each
+`MadeFieldElem` exposes `def apply(outer: OuterType): Type` — a typed accessor that returns the field's value from
+an instance of the declaring type. `OuterType` is fixed to the mirrored type, so the call type-checks without casts:
+
+```scala
+val m = Made.derived[User]
+val name *: age *: EmptyTuple = m.elems
+
+val u = User("Alice", 30)
+name.apply(u)  // : String  = "Alice"
+age.apply(u)   // : Int     = 30
+```
+
+The accessor is generated at macro expansion using a typed `select`, so it has the same cost as a direct field
+read. It works for plain case classes, value classes, `@transparent` wrappers (returning the inner value), generic
+types, and recursive ADTs.
+
+### Constructing Values via `fromTuple`
+
+`Made.Product` exposes two constructors. `fromUnsafeArray(Array[Any])` is the array-based path used in the Show example
+and pairs with `productIterator` on the read side. For a typed alternative, `fromTuple(elems: ElemTypes): Type` accepts
+a tuple whose shape matches `ElemTypes` exactly:
+
+```scala
+val m = Made.derived[User]
+
+m.fromTuple(("Alice", 30))   // : User
+```
+
+`fromTuple` is the inverse of `Tuple.fromProduct` and avoids the `Array[Any]` boxing of `fromUnsafeArray`. Use it when
+the caller already has a tuple in hand — for example, when deriving codecs that decode into a tuple before
+reconstructing the case class.
+
 ## Transparent Mirrors
 
 A `Made.Transparent` mirror wraps a single value. It is produced for case classes annotated with `@transparent` that
