@@ -21,39 +21,39 @@ private def singleValueOfImpl[T <: scala.Singleton: Type](using quotes: Quotes):
   term.asExprOf[T]
 
 extension (comp: Expr.type)
-  def ofOption[A: Type](opt: Option[Expr[A]])(using Quotes): Expr[Option[A]] = opt match
+  private[made] def ofOption[A: Type](opt: Option[Expr[A]])(using Quotes): Expr[Option[A]] = opt match
     case Some(expr) => '{ Some($expr) }
     case None => '{ None }
 
-def stringToType(str: String)(using quotes: Quotes): Type[? <: String] =
+private[made] def stringToType(str: String)(using quotes: Quotes): Type[? <: String] =
   import quotes.reflect.*
   ConstantType(StringConstant(str)).asType.asInstanceOf[Type[? <: String]]
 
-def typeToString[S <: String: Type](using quotes: Quotes): S =
+private[made] def typeToString[S <: String: Type](using quotes: Quotes): S =
   import quotes.reflect.*
   TypeRepr.of[S] match
     case ConstantType(StringConstant(str)) => str.asInstanceOf[S]
     case _ => report.errorAndAbort(s"Unsupported singleton type: ${Type.show[S]}")
 
-def traverseTypes(tpes: Iterable[Type[? <: AnyKind]])(using Quotes): Type[? <: Tuple] =
+private[made] def traverseTypes(tpes: Iterable[Type[? <: AnyKind]])(using Quotes): Type[? <: Tuple] =
   val empty: Type[? <: Tuple] = Type.of[EmptyTuple]
   tpes.foldRight(empty):
     case ('[tpe], '[type acc <: Tuple; acc]) => Type.of[tpe *: acc]
     case (_, _) => wontHappen
 
-def traverseTuple(tpe: Type[? <: Tuple])(using Quotes): List[Type[? <: AnyKind]] = tpe match
+private[made] def traverseTuple(tpe: Type[? <: Tuple])(using Quotes): List[Type[? <: AnyKind]] = tpe match
   case '[EmptyTuple] => Nil
   case '[t *: ts] => Type.of[t] :: traverseTuple(Type.of[ts])
 
 extension (companion: Expr.type)
-  def ofRefinedTuple(exprs: List[Expr[?]])(using Quotes): Expr[Tuple] = exprs.runtimeChecked match
+  private[made] def ofRefinedTuple(exprs: List[Expr[?]])(using Quotes): Expr[Tuple] = exprs.runtimeChecked match
     case Nil => '{ EmptyTuple }
     case '{ $headExpr: h } :: tail =>
       ofRefinedTuple(tail) match
         case '{ type t <: Tuple; $tailExpr: t } =>
           '{ ${ headExpr.asExprOf[h] } *: ${ tailExpr.asExprOf[t] } }
 
-def reportOnDuplicates(labels: Seq[(label: String, original: String)])(using Quotes): Unit =
+private[made] def reportOnDuplicates(labels: Seq[(label: String, original: String)])(using Quotes): Unit =
   import quotes.reflect.*
   labels
     .groupMap(_.label)(_.original)
