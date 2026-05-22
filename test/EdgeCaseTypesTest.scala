@@ -1,6 +1,8 @@
 package made
 
 import made.annotation.transparent
+import made.util.SnippetCompiler
+import made.util.SnippetCompiler.containsMessage
 
 class EdgeCaseTypesTest extends munit.FunSuite:
   import EdgeCaseTypesTest.*
@@ -41,6 +43,59 @@ class EdgeCaseTypesTest extends munit.FunSuite:
     assertEquals(inner.apply(OpaqueWrapper(Ids("w-1"))), Ids("w-1"))
   }
 
+  test("derives Product for named tuple".ignore) {
+    // TODO: deriver succeeds for named tuples but exposes empty ElemLabels / ElemTypes —
+    //       investigate Mirror.ProductOf handling of (name: String, age: Int).
+    val m = Made.derived[PersonNT]
+    assertEquals(compiletime.constValueTuple[m.ElemLabels].toList, List("name", "age"))
+  }
+
+  test("derives Product for plain tuple") {
+    val m = Made.derived[(Int, String)]
+    assertEquals(compiletime.constValueTuple[m.ElemLabels].toList, List("_1", "_2"))
+    val v: (Int, String) = m.fromTuple((1, "x"))
+    assertEquals(v, (1, "x"))
+  }
+
+  test("derives the underlying mirror through a type alias".ignore) {
+    // TODO: deriver succeeds for `type AliasFoo = Foo` but exposes empty ElemLabels.
+    //       Probably the macro looks at the alias rather than dealiased Foo.
+    val m = Made.derived[AliasFoo]
+    assertEquals(compiletime.constValueTuple[m.ElemLabels].toList, List("x"))
+  }
+
+  test("derives the underlying Product for a refinement of a case class") {
+    val m = Made.derived[Foo { val x: Int }]
+    assertEquals(compiletime.constValueTuple[m.ElemLabels].toList, List("x"))
+  }
+
+  test("union type as mirrored type is rejected") {
+    val diags = SnippetCompiler.compile(
+      // language=scala 3
+      """import made.*
+        |object S { val _ = Made.derived[Int | String] }
+        |""".stripMargin,
+    )
+    assert(
+      diags.containsMessage("Unsupported Mirror type"),
+      s"expected 'Unsupported Mirror type' diagnostic but got: $diags",
+    )
+  }
+
+  test("non-sealed trait without a Mirror is rejected") {
+    val diags = SnippetCompiler.compile(
+      // language=scala 3
+      """import made.*
+        |trait Open
+        |object S { val _ = Made.derived[Open] }
+        |""".stripMargin,
+    )
+    assert(
+      diags.containsMessage("Unsupported Mirror type") || diags.containsMessage("No Made"),
+      s"expected unsupported diagnostic but got: $diags",
+    )
+  }
+
 object EdgeCaseTypesTest:
   object opaqueIds:
     opaque type Ids = String
@@ -62,3 +117,8 @@ object EdgeCaseTypesTest:
 
   @transparent
   case class OpaqueWrapper(inner: Ids)
+
+  type PersonNT = (name: String, age: Int)
+
+  case class Foo(x: Int)
+  type AliasFoo = Foo
