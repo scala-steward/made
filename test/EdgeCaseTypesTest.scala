@@ -45,13 +45,14 @@ class EdgeCaseTypesTest extends munit.FunSuite:
     assertEquals(inner.apply(OpaqueWrapper(Ids("w-1"))), Ids("w-1"))
   }
 
-  // TODO: named tuple — deriver succeeds for (name: String, age: Int) but exposes empty ElemLabels.
-  //   Re-enable when Mirror.ProductOf handling of named tuples is investigated:
-  //
-  //   test("derives Product for named tuple") {
-  //     val m = Made.derived[PersonNT]
-  //     assertEquals(compiletime.constValueTuple[m.ElemLabels].toList, List("name", "age"))
-  //   }
+  test("derives Product for named tuple") {
+    val m = Made.derived[PersonNT]
+    assertEquals(compiletime.constValueTuple[m.ElemLabels].toList, List("name", "age"))
+    val nt: PersonNT = (name = "Alice", age = 30)
+    val (n, a) = m.elems
+    assertEquals(n.apply(nt), "Alice")
+    assertEquals(a.apply(nt), 30)
+  }
 
   test("derives Product for plain tuple") {
     val m = Made.derived[(Int, String)]
