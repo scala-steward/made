@@ -177,6 +177,25 @@ The `ClassTag.unapply` check performs a runtime type test: for `Point`, the `Cla
 value. The `compiletime.summonAll` calls resolve instances for all subtypes at compile time - for `Shape`, this means
 `ClassTag` and `Show` for `Circle`, `Rectangle`, and `Point.type` must all be in scope.
 
+### Dispatching with `ordinal`
+
+`Made.Sum` exposes `def ordinal(value: Type): Int`, which returns the zero-based index of the runtime subtype within
+`Elems`. It agrees with `scala.deriving.Mirror.SumOf#ordinal`. Using it removes the `ClassTag` scan and turns dispatch
+into a single array lookup:
+
+```scala 3 sc-name:derive-sum-ordinal sc-compile-with:show-trait
+import made.*
+
+inline def deriveSum[T](m: Made.SumOf[T]): Show[T] = value =>
+  val subtypeShows =
+    compiletime.summonAll[Tuple.Map[m.ElemTypes, Show]].toList.asInstanceOf[List[Show[Any]]]
+  subtypeShows(m.ordinal(value)).show(value)
+```
+
+Singleton subtypes are reachable through `MadeSubSingletonElem`, which extends `MadeSubElem` with a `value` accessor
+returning the singleton instance. This is useful when iterating `m.elems` to materialise case objects without a
+`ClassTag` or pattern match.
+
 ## Singleton Mirrors
 
 `Made.Singleton` is produced for standalone objects and `Unit`. Its `elems` is `EmptyTuple` - there are no
