@@ -108,6 +108,9 @@ Constructor parameters of the aggregate can be referenced in inner annotation ar
 application site:
 
 ```scala
+import made.annotation.*
+import scala.annotation.StaticAnnotation
+
 class customName(n: String) extends AnnotationAggregate:
   @name(n)
   final def aggregated: List[StaticAnnotation] = reifyAggregated
@@ -119,6 +122,10 @@ Aggregates compose freely with `MetaAnnotation` — query `hasAnnotation` / `get
 annotation type, not the aggregate:
 
 ```scala
+import made.*
+import made.annotation.*
+import scala.annotation.StaticAnnotation
+
 class InnerMeta extends MetaAnnotation
 
 class withMeta extends AnnotationAggregate:
