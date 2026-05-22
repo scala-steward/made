@@ -311,11 +311,11 @@ object Made:
       _ = member.paramSymss match
         case Nil => // no parameters, it's a val or a def without parameters
         case List(Nil) => // a def with empty parameter list
-        case paramLists =>
-          for
-            paramList <- paramLists
-            param <- paramList
-          do if !param.flags.is(Flags.EmptyFlags) then symbolInfo(param).dbg // todo
+        case _ =>
+          report.errorAndAbort(
+            s"@generated cannot be applied to methods with parameters: ${member.name}",
+            member.pos.getOrElse(tSymbol.pos.getOrElse(Position.ofMacroExpansion)),
+          )
     yield
       val elemTpe = tTpe.memberType(member).widen
 
