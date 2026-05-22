@@ -48,7 +48,7 @@ into the mirror's `Metadata` tuple.
 import made.annotation.MetaAnnotation
 
 class JsonName(val value: String) extends MetaAnnotation
-class Optional() extends MetaAnnotation
+class Optional extends MetaAnnotation
 class MinLength(val value: Int) extends MetaAnnotation
 ```
 
@@ -139,4 +139,3 @@ x.getAnnotation[InnerMeta].isDefined               // true
   macro expansion.
 - `reifyAggregated` collects only annotations whose type is a subtype of `StaticAnnotation`. Annotations from outside
   the standard annotation hierarchy are skipped.
-- An aggregate with no inner annotations emits a compile-time warning.
