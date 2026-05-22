@@ -39,7 +39,7 @@ libraryDependencies += "io.github.halotukozak" %% "made" % "0.1.0"
 
 ```scala
 def scalaVersion = "3.8.4-RC2"
-def ivyDeps = Agg(ivy"io.github.halotukozak::made::0.1.0")
+def mvDeps = Seq(mvn"io.github.halotukozak::made::0.1.0")
 ```
 
 ## Quickstart
