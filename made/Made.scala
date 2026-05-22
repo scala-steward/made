@@ -508,10 +508,8 @@ object Made:
         def deriveProduct = Expr.summon[Mirror.ProductOf[T]].map {
           case '{
                 type mirroredElemTypes <: Tuple
-                type label <: String
 
                 $m: Mirror.ProductOf[T] {
-                  type MirroredLabel = label
                   type MirroredElemTypes = mirroredElemTypes
                 }
               } =>
@@ -600,10 +598,8 @@ object Made:
         def deriveSum = Expr.summon[Mirror.SumOf[T]].map {
           case '{
                 type mirroredElemTypes <: Tuple
-                type label <: String
 
                 $m: Mirror.SumOf[T] {
-                  type MirroredLabel = label
                   type MirroredElemTypes = mirroredElemTypes
                 }
               } =>
