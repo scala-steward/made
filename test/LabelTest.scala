@@ -11,11 +11,10 @@ class LabelTest extends munit.FunSuite:
     assertEquals(mirror.label, "SimpleCaseClass")
   }
 
-  // todo: fix
-//  test("label for case class with @name") {
-//    val mirror = Made.derived[NamedProduct]
-//    assertEquals(mirror.label, "custom")
-//  }
+  test("label for case class with @name") {
+    val mirror = Made.derived[NamedProduct]
+    assertEquals(mirror.label, "custom")
+  }
 
   test("label for object") {
     val mirror = Made.derived[SimpleObject.type]
