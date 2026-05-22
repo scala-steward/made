@@ -20,8 +20,10 @@ class EdgeCaseTypesTest extends munit.FunSuite:
     val m = Made.derived[WithUnion]
     val v *: EmptyTuple = m.elems
     assertEquals(v.label, "v")
-    assertEquals(v.apply(WithUnion(42)).asInstanceOf[Int | String], 42)
-    assertEquals(v.apply(WithUnion("x")).asInstanceOf[Int | String], "x")
+    val readInt: Int | String = v.apply(WithUnion(42))
+    val readStr: Int | String = v.apply(WithUnion("x"))
+    assertEquals(readInt, 42: Int | String)
+    assertEquals(readStr, "x": Int | String)
   }
 
   test("derives Product with intersection-type field") {
@@ -43,12 +45,13 @@ class EdgeCaseTypesTest extends munit.FunSuite:
     assertEquals(inner.apply(OpaqueWrapper(Ids("w-1"))), Ids("w-1"))
   }
 
-  test("derives Product for named tuple".ignore) {
-    // TODO: deriver succeeds for named tuples but exposes empty ElemLabels / ElemTypes —
-    //       investigate Mirror.ProductOf handling of (name: String, age: Int).
-    val m = Made.derived[PersonNT]
-    assertEquals(compiletime.constValueTuple[m.ElemLabels].toList, List("name", "age"))
-  }
+  // TODO: named tuple — deriver succeeds for (name: String, age: Int) but exposes empty ElemLabels.
+  //   Re-enable when Mirror.ProductOf handling of named tuples is investigated:
+  //
+  //   test("derives Product for named tuple") {
+  //     val m = Made.derived[PersonNT]
+  //     assertEquals(compiletime.constValueTuple[m.ElemLabels].toList, List("name", "age"))
+  //   }
 
   test("derives Product for plain tuple") {
     val m = Made.derived[(Int, String)]
@@ -57,12 +60,13 @@ class EdgeCaseTypesTest extends munit.FunSuite:
     assertEquals(v, (1, "x"))
   }
 
-  test("derives the underlying mirror through a type alias".ignore) {
-    // TODO: deriver succeeds for `type AliasFoo = Foo` but exposes empty ElemLabels.
-    //       Probably the macro looks at the alias rather than dealiased Foo.
-    val m = Made.derived[AliasFoo]
-    assertEquals(compiletime.constValueTuple[m.ElemLabels].toList, List("x"))
-  }
+  // TODO: type alias — deriver succeeds for `type AliasFoo = Foo` but exposes empty ElemLabels.
+  //   Probably the macro looks at the alias rather than dealiased Foo:
+  //
+  //   test("derives the underlying mirror through a type alias") {
+  //     val m = Made.derived[AliasFoo]
+  //     assertEquals(compiletime.constValueTuple[m.ElemLabels].toList, List("x"))
+  //   }
 
   test("derives the underlying Product for a refinement of a case class") {
     val m = Made.derived[Foo { val x: Int }]
@@ -91,8 +95,8 @@ class EdgeCaseTypesTest extends munit.FunSuite:
         |""".stripMargin,
     )
     assert(
-      diags.containsMessage("Unsupported Mirror type") || diags.containsMessage("No Made"),
-      s"expected unsupported diagnostic but got: $diags",
+      diags.containsMessage("Unsupported Mirror type"),
+      s"expected 'Unsupported Mirror type' diagnostic but got: $diags",
     )
   }
 
