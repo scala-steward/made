@@ -134,29 +134,29 @@ class ContainsOnlyTest extends munit.FunSuite:
     assert(evidence.asInstanceOf[Boolean])
   }
 
-  // --- integration with mapOnly ---
+  // --- integration with mapAs ---
 
-  test("mapOnly compiles for homogeneous Int tuple") {
+  test("mapAs compiles for homogeneous Int tuple") {
     val result = (1, 2, 3).mapAs[Int]([t <: Int] => (x: t) => List(x))
     assertEquals(result, (List(1), List(2), List(3)))
   }
 
-  test("mapOnly compiles for homogeneous String tuple") {
+  test("mapAs compiles for homogeneous String tuple") {
     val result = ("a", "b").mapAs[String]([t <: String] => (x: t) => Option(x))
     assertEquals(result, (Some("a"), Some("b")))
   }
 
-  test("mapOnly compiles for empty tuple") {
+  test("mapAs compiles for empty tuple") {
     val result = EmptyTuple.mapAs[Int]([t <: Int] => (x: t) => List(x))
     assertEquals(result, EmptyTuple)
   }
 
-  test("mapOnly compiles for single element") {
+  test("mapAs compiles for single element") {
     val result = Tuple1(42).mapAs[Int]([t <: Int] => (x: t) => Option(x))
     assertEquals(result, Tuple1(Some(42)))
   }
 
-  test("mapOnly compiles for subtype hierarchy") {
+  test("mapAs compiles for subtype hierarchy") {
     sealed trait Animal
     case class Dog(name: String) extends Animal
     case class Cat(name: String) extends Animal
@@ -167,44 +167,44 @@ class ContainsOnlyTest extends munit.FunSuite:
 
   // --- does not compile cases ---
 
-  test("does not compile: heterogeneous tuple with mapOnly") {
+  test("does not compile: heterogeneous tuple with mapAs") {
     val errors = compileErrors("""
-      (1, "a").mapOnly[Int]([t <: Int] => (x: t) => List(x))
+      (1, "a").mapAs[Int]([t <: Int] => (x: t) => List(x))
     """)
     assert(errors.nonEmpty)
   }
 
-  test("does not compile: wrong target type with mapOnly") {
+  test("does not compile: wrong target type with mapAs") {
     val errors = compileErrors("""
-      (1, 2, 3).mapOnly[String]([t <: String] => (x: t) => List(x))
+      (1, 2, 3).mapAs[String]([t <: String] => (x: t) => List(x))
     """)
     assert(errors.nonEmpty)
   }
 
   test("does not compile: Int and Double mix") {
     val errors = compileErrors("""
-      (1, 2.0).mapOnly[Int]([t <: Int] => (x: t) => List(x))
+      (1, 2.0).mapAs[Int]([t <: Int] => (x: t) => List(x))
     """)
     assert(errors.nonEmpty)
   }
 
   test("does not compile: Boolean among Ints") {
     val errors = compileErrors("""
-      (1, true, 2).mapOnly[Int]([t <: Int] => (x: t) => List(x))
+      (1, true, 2).mapAs[Int]([t <: Int] => (x: t) => List(x))
     """)
     assert(errors.nonEmpty)
   }
 
   test("does not compile: String among Ints at end") {
     val errors = compileErrors("""
-      (1, 2, "three").mapOnly[Int]([t <: Int] => (x: t) => List(x))
+      (1, 2, "three").mapAs[Int]([t <: Int] => (x: t) => List(x))
     """)
     assert(errors.nonEmpty)
   }
 
   test("does not compile: String among Ints at start") {
     val errors = compileErrors("""
-      ("zero", 1, 2).mapOnly[Int]([t <: Int] => (x: t) => List(x))
+      ("zero", 1, 2).mapAs[Int]([t <: Int] => (x: t) => List(x))
     """)
     assert(errors.nonEmpty)
   }
@@ -226,7 +226,7 @@ class ContainsOnlyTest extends munit.FunSuite:
   }
 
   // `containsOnly` only provides Head/Last → T conversions today. Operations like
-  // `apply(i)`, `drop`, `take`, `tail`, `init`, `reverse`, `mapOnly`, `toList`, `++`
+  // `apply(i)`, `drop`, `take`, `tail`, `init`, `reverse`, `mapAs`, `toList`, `++`
   // need the static tuple shape to reduce match types, which we don't carry on an
   // abstract `Tuple` value. Coverage for those would require a richer evidence type.
 
