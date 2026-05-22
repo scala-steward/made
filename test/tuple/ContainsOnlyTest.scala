@@ -217,14 +217,6 @@ class ContainsOnlyTest extends munit.FunSuite:
     assertEquals(first, 1)
   }
 
-//  test("evidence allows indexed access") {
-//    val tuple: (Any, Any, Any) = (1, 2, 3)
-//    given tuple.type containsOnly Int = containsOnly.refl
-//
-//    val second: Int = tuple(1)
-//    assertEquals(second, 2)
-//  }
-
   test("evidence allows last access") {
     val tuple: Tuple = (1, 2, 3)
     given tuple.type containsOnly Int = containsOnly.refl
@@ -232,69 +224,11 @@ class ContainsOnlyTest extends munit.FunSuite:
     val last: Int = tuple.last
     assertEquals(last, 3)
   }
-//
-//  test("evidence allows drop") {
-//    val tuple: Tuple = (1, 2, 3)
-//    given tuple.type containsOnly Int = containsOnly.refl
-//
-//    val dropped: (Int, Int) = tuple.drop(1)
-//    assertEquals(dropped.toList, List(2, 3))
-//  }
-//
-//  test("evidence allows take") {
-//    val tuple: Tuple = (1, 2, 3)
-//    given tuple.type containsOnly Int = containsOnly.refl
-//
-//    val taken: (Int, Int) = tuple.take(2)
-//    assertEquals(taken.toList, List(1, 2))
-//  }
-//
-//  test("evidence allows tail") {
-//    val tuple: Tuple = (1, 2, 3)
-//    given tuple.type containsOnly Int = containsOnly.refl
-//
-//    val rest: (Int, Int) = tuple.tail
-//    assertEquals(rest.toList, List(2, 3))
-//  }
-//
-//  test("evidence allows init") {
-//    val tuple: Tuple = (1, 2, 3)
-//    given tuple.type containsOnly Int = containsOnly.refl
-//
-//    val front: (Int, Int) = tuple.init
-//    assertEquals(front.toList, List(1, 2))
-//  }
-//
-//  test("evidence allows reverse") {
-//    val tuple: Tuple = (1, 2, 3)
-//    given tuple.type containsOnly Int = containsOnly.refl
-//
-//    val reversed: (Int, Int, Int) = tuple.reverse
-//    assertEquals(reversed.toList, List(3, 2, 1))
-//  }
-//
-//  test("evidence allows mapOnly") {
-//    val tuple: Tuple = (1, 2, 3)
-//    given tuple.type containsOnly Int = containsOnly.refl
-//
-//    val result = tuple.mapOnly[Int]([t <: Int] => (x: t) => List(x))
-//    assertEquals(result.toList, List(List(1), List(2), List(3)))
-//  }
 
-//  test("evidence allows toList") {
-//    val tuple: Tuple = (1, 2, 3)
-//    given tuple.type containsOnly Int = containsOnly.refl
-//
-//    assertEquals(tuple.toList, List(1, 2, 3))
-//  }
-//
-//  test("evidence allows concat") {
-//    val tuple: Tuple = (1, 2)
-//    given tuple.type containsOnly Int = containsOnly.refl
-//
-//    val result: Tuple = tuple ++ (3, 4)
-//    assertEquals(result.toList, List(1, 2, 3, 4))
-//  }
+  // `containsOnly` only provides Head/Last → T conversions today. Operations like
+  // `apply(i)`, `drop`, `take`, `tail`, `init`, `reverse`, `mapOnly`, `toList`, `++`
+  // need the static tuple shape to reduce match types, which we don't carry on an
+  // abstract `Tuple` value. Coverage for those would require a richer evidence type.
 
   test("evidence on single element") {
     val tuple: Tuple = Tuple1(42)
