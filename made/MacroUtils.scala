@@ -53,6 +53,12 @@ extension (companion: Expr.type)
         case '{ type t <: Tuple; $tailExpr: t } =>
           '{ ${ headExpr.asExprOf[h] } *: ${ tailExpr.asExprOf[t] } }
 
+private[made] def nameOf[T: Type](using quotes: Quotes): String =
+  import quotes.reflect.*
+  val tpe = TypeRepr.of[T]
+  val termSym = tpe.termSymbol
+  if termSym.isNoSymbol then tpe.typeSymbol.name else termSym.name
+
 private[made] def reportOnDuplicates(labels: Seq[(label: String, original: String)])(using Quotes): Unit =
   import quotes.reflect.*
   labels
