@@ -333,7 +333,7 @@ object Done:
                 }
 
     (
-      labelTypeOf(tSymbol, labelNameOf(tTpe)),
+      labelTypeOf(tSymbol, nameOf[T]),
       metaTypeOf(tSymbol),
       Expr.ofRefinedTuple(operations),
     ).runtimeChecked match

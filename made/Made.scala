@@ -391,7 +391,7 @@ object Made:
 
     (
       metaTypeOf(tSymbol),
-      labelTypeOf(tSymbol, labelNameOf(tTpe)),
+      labelTypeOf(tSymbol, nameOf[T]),
       Expr.ofRefinedTuple(generatedElems.toList),
     ).runtimeChecked match
       case (

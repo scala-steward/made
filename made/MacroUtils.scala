@@ -53,13 +53,9 @@ extension (companion: Expr.type)
         case '{ type t <: Tuple; $tailExpr: t } =>
           '{ ${ headExpr.asExprOf[h] } *: ${ tailExpr.asExprOf[t] } }
 
-/**
- * Source-level name of the type behind `tpe`. For module classes (e.g. `case object Obj`) the
- * `typeSymbol.name` carries a trailing `$`. The companion term symbol carries the clean name, so
- * prefer it when present. The Scala 3 Quotes API does not expose `stripModuleClassSuffix`, so this
- * is the public-API equivalent the compiler uses internally for `Mirror.MirroredLabel`.
- */
-private[made] def labelNameOf(using quotes: Quotes)(tpe: quotes.reflect.TypeRepr): String =
+private[made] def nameOf[T: Type](using quotes: Quotes): String =
+  import quotes.reflect.*
+  val tpe = TypeRepr.of[T]
   val termSym = tpe.termSymbol
   if termSym.isNoSymbol then tpe.typeSymbol.name else termSym.name
 
