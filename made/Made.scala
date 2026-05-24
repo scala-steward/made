@@ -508,9 +508,11 @@ object Made:
         def deriveProduct = Expr.summon[Mirror.ProductOf[T]].map {
           case '{
                 type mirroredElemTypes <: Tuple
+                type mirroredElemLabels <: Tuple
 
                 $m: Mirror.ProductOf[T] {
                   type MirroredElemTypes = mirroredElemTypes
+                  type MirroredElemLabels = mirroredElemLabels
                 }
               } =>
 
@@ -536,38 +538,74 @@ object Made:
                   case _ => false
               case _ => false
 
-            val (exprs, names) = tSymbol.caseFields.zipWithIndex
-              .zip(traverseTuple(Type.of[mirroredElemTypes]))
-              .foldLeft((Vector.empty[Expr[?]], Vector.empty[(label: String, original: String)])):
-                case ((exprs, names), ((fieldSymbol, index), '[fieldTpe])) =>
-                  if hasFBound && TypeRepr.of[fieldTpe] =:= TypeRepr.of[Nothing] then
-                    report.warning(
-                      s"Field '${fieldSymbol.name}' of F-bounded case class ${tSymbol.fullName} resolves " +
-                        "to Nothing at this derivation site. The compiler-synthesized " +
-                        "Mirror.Product.fromProduct on F-bounded case classes emits `.asInstanceOf[Nothing]` " +
-                        "regardless of type-parameter substitution and will throw ClassCastException at " +
-                        "runtime when reading. See scala/scala3#26132.",
-                      fieldSymbol.pos.getOrElse(tSymbol.pos.getOrElse(Position.ofMacroExpansion)),
-                    )
-                  (labelTypeOf(fieldSymbol, fieldSymbol.name), metaTypeOf(fieldSymbol)).runtimeChecked match
-                    case ('[type elemLabel <: String; elemLabel], '[type meta <: Tuple; meta]) =>
-                      val expr = '{
-                        new MadeFieldElemWorkaround[T, fieldTpe]:
-                          type Label = elemLabel
-                          type Metadata = meta
+            val elemTypesList = traverseTuple(Type.of[mirroredElemTypes])
+            val elemLabelsList = traverseTuple(Type.of[mirroredElemLabels])
 
-                          def apply(outer: T): fieldTpe =
-                            ${ '{ outer }.asTerm.select(fieldSymbol).asExprOf[fieldTpe] }
-                          def default = ${ defaultOf[fieldTpe](index, fieldSymbol) }
-                        : MadeFieldElem {
-                          type Type = fieldTpe
-                          type Label = elemLabel
-                          type Metadata = meta
-                          type OuterType = T
+            val (exprs, names) = if tSymbol.caseFields.sizeIs == elemTypesList.size then
+              elemTypesList
+                .lazyZip(elemLabelsList)
+                .lazyZip(tSymbol.caseFields)
+                .zipWithIndex
+                .foldLeft((Vector.empty[Expr[?]], Vector.empty[(label: String, original: String)])):
+                  case (
+                        (exprs, names),
+                        (('[fieldTpe], '[type mirrorLabel <: String; mirrorLabel], fieldSymbol), index),
+                      ) =>
+                    if hasFBound && TypeRepr.of[fieldTpe] =:= TypeRepr.of[Nothing] then
+                      report.warning(
+                        s"Field '${fieldSymbol.name}' of F-bounded case class ${tSymbol.fullName} resolves " +
+                          "to Nothing at this derivation site. The compiler-synthesized " +
+                          "Mirror.Product.fromProduct on F-bounded case classes emits `.asInstanceOf[Nothing]` " +
+                          "regardless of type-parameter substitution and will throw ClassCastException at " +
+                          "runtime when reading. See scala/scala3#26132.",
+                        fieldSymbol.pos.getOrElse(tSymbol.pos.getOrElse(Position.ofMacroExpansion)),
+                      )
+                    (labelTypeOf(fieldSymbol, fieldSymbol.name), metaTypeOf(fieldSymbol)).runtimeChecked match
+                      case ('[type elemLabel <: String; elemLabel], '[type meta <: Tuple; meta]) =>
+                        val expr = '{
+                          new MadeFieldElemWorkaround[T, fieldTpe]:
+                            type Label = elemLabel
+                            type Metadata = meta
+
+                            def apply(outer: T): fieldTpe = ${
+                              '{ outer }.asTerm.select(fieldSymbol).asExprOf[fieldTpe]
+                            }
+                            def default = ${ defaultOf[fieldTpe](index, fieldSymbol) }
+                          : MadeFieldElem {
+                            type Type = fieldTpe
+                            type Label = elemLabel
+                            type Metadata = meta
+                            type OuterType = T
+                          }
                         }
+                        (exprs :+ expr, names :+ (typeToString[elemLabel], fieldSymbol.name))
+                  case _ => wontHappen
+            else
+              // named tuples
+              elemTypesList
+                .lazyZip(elemLabelsList)
+                .zipWithIndex
+                .foldLeft((Vector.empty[Expr[?]], Vector.empty[(label: String, original: String)])):
+                  case ((exprs, names), (('[fieldTpe], '[type mirrorLabel <: String; mirrorLabel]), index)) =>
+                    val expr = '{
+                      new MadeFieldElemWorkaround[T, fieldTpe]:
+                        type Label = mirrorLabel
+                        type Metadata = EmptyTuple
+
+                        def apply(outer: T): fieldTpe = outer
+                          .asInstanceOf[scala.Product]
+                          .productElement(${ Expr(index) })
+                          .asInstanceOf[fieldTpe]
+                        def default = ${ Expr(None) }
+                      : MadeFieldElem {
+                        type Type = fieldTpe
+                        type Label = mirrorLabel
+                        type Metadata = EmptyTuple
+                        type OuterType = T
                       }
-                      (exprs :+ expr, names :+ (typeToString[elemLabel], fieldSymbol.name))
-                case _ => wontHappen
+                    }
+                    (exprs :+ expr, names :+ (typeToString[mirrorLabel], typeToString[mirrorLabel]))
+                  case _ => wontHappen
 
             reportOnDuplicates(names)
 
