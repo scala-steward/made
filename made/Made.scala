@@ -297,7 +297,9 @@ object Made:
     val utils = new MacroUtils[quotes.type]
     import utils.*
 
-    val tTpe = TypeRepr.of[T]
+    // dealiasKeepOpaques unfolds transparent aliases (e.g. `type AliasFoo = Foo`) so that
+    // the deriver sees the underlying case class while preserving opaque boundaries.
+    val tTpe = TypeRepr.of[T].dealiasKeepOpaques
     val tSymbol = tTpe.typeSymbol
 
     val generatedElems = for

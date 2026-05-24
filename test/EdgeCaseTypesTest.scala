@@ -61,13 +61,19 @@ class EdgeCaseTypesTest extends munit.FunSuite:
     assertEquals(v, (1, "x"))
   }
 
-  // TODO: type alias — deriver succeeds for `type AliasFoo = Foo` but exposes empty ElemLabels.
-  //   Probably the macro looks at the alias rather than dealiased Foo:
-  //
-  //   test("derives the underlying mirror through a type alias") {
-  //     val m = Made.derived[AliasFoo]
-  //     assertEquals(compiletime.constValueTuple[m.ElemLabels].toList, List("x"))
-  //   }
+  test("derives the underlying mirror through a type alias") {
+    val m = Made.derived[AliasFoo]
+    assertEquals(compiletime.constValueTuple[m.ElemLabels].toList, List("x"))
+    val v: Foo = m.fromTuple(Tuple(7))
+    assertEquals(v, Foo(7))
+  }
+
+  test("opaque-wrapped case class keeps the opaque label and derives via Mirror") {
+    val m = OpaqueScope.deriveWrapped
+    assertEquals(compiletime.constValueTuple[m.ElemLabels].toList, List("x"))
+    // mirror.Label preserves the opaque alias name rather than dealiasing to Foo
+    assertEquals(compiletime.constValue[m.Label], "WrappedFoo")
+  }
 
   test("derives the underlying Product for a refinement of a case class") {
     val m = Made.derived[Foo { val x: Int }]
@@ -127,3 +133,10 @@ object EdgeCaseTypesTest:
 
   case class Foo(x: Int)
   type AliasFoo = Foo
+
+  object OpaqueScope:
+    opaque type WrappedFoo = Foo
+    object WrappedFoo:
+      def apply(f: Foo): WrappedFoo = f
+    // derive inside the opaque scope so Mirror.ProductOf[WrappedFoo] resolves
+    def deriveWrapped = Made.derived[WrappedFoo]
