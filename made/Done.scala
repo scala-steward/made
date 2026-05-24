@@ -333,7 +333,7 @@ object Done:
                 }
 
     (
-      labelTypeOf(tSymbol, tSymbol.name.stripSuffix("$")), // find a better way than stripping $
+      labelTypeOf(tSymbol, labelNameOf(tTpe)),
       metaTypeOf(tSymbol),
       Expr.ofRefinedTuple(operations),
     ).runtimeChecked match

@@ -391,7 +391,7 @@ object Made:
 
     (
       metaTypeOf(tSymbol),
-      labelTypeOf(tSymbol, tSymbol.name.stripSuffix("$")), // find a better way than stripping $
+      labelTypeOf(tSymbol, labelNameOf(tTpe)),
       Expr.ofRefinedTuple(generatedElems.toList),
     ).runtimeChecked match
       case (
