@@ -14,12 +14,16 @@ class FromMapTest extends munit.FunSuite:
     assert(bob == User("Bob", 25, Some("Cracow")))
   }
 
-//  todo
-//  type Bill = (amount: Double, @whenAbsent(0.1) tip:  Double)
-//
-//  test ("named tuple"){
-//    given FromMap[Bill] = FromMap.derived
-//
-//    val bill = summon[FromMap[Bill]].fromMap(Map("amount" -> 67.0))
-//    assert(bill == (67.0, 0.1))
-//  }
+  type Bill = (amount: Double, tip: Double)
+
+  test("named tuple") {
+    given FromMap[Bill] = FromMap.derived
+    val bill: Bill = summon[FromMap[Bill]].fromMap(Map("amount" -> 67.0, "tip" -> 0.1))
+    val expected: Bill = (amount = 67.0, tip = 0.1)
+    assert(bill == expected)
+  }
+
+  // Annotations on named-tuple fields (e.g. `@whenAbsent(0.1) tip: Double`) are not yet
+  // parseable in Scala 3 — `@` is rejected between the leading `(` and the field identifier.
+  // Re-add a `@whenAbsent` case here once the syntax is supported and the deriver carries
+  // per-field metadata through the symbol-less product path.

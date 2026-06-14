@@ -134,29 +134,29 @@ class ContainsOnlyTest extends munit.FunSuite:
     assert(evidence.asInstanceOf[Boolean])
   }
 
-  // --- integration with mapOnly ---
+  // --- integration with mapAs ---
 
-  test("mapOnly compiles for homogeneous Int tuple") {
+  test("mapAs compiles for homogeneous Int tuple") {
     val result = (1, 2, 3).mapAs[Int]([t <: Int] => (x: t) => List(x))
     assertEquals(result, (List(1), List(2), List(3)))
   }
 
-  test("mapOnly compiles for homogeneous String tuple") {
+  test("mapAs compiles for homogeneous String tuple") {
     val result = ("a", "b").mapAs[String]([t <: String] => (x: t) => Option(x))
     assertEquals(result, (Some("a"), Some("b")))
   }
 
-  test("mapOnly compiles for empty tuple") {
+  test("mapAs compiles for empty tuple") {
     val result = EmptyTuple.mapAs[Int]([t <: Int] => (x: t) => List(x))
     assertEquals(result, EmptyTuple)
   }
 
-  test("mapOnly compiles for single element") {
+  test("mapAs compiles for single element") {
     val result = Tuple1(42).mapAs[Int]([t <: Int] => (x: t) => Option(x))
     assertEquals(result, Tuple1(Some(42)))
   }
 
-  test("mapOnly compiles for subtype hierarchy") {
+  test("mapAs compiles for subtype hierarchy") {
     sealed trait Animal
     case class Dog(name: String) extends Animal
     case class Cat(name: String) extends Animal
@@ -167,44 +167,44 @@ class ContainsOnlyTest extends munit.FunSuite:
 
   // --- does not compile cases ---
 
-  test("does not compile: heterogeneous tuple with mapOnly") {
+  test("does not compile: heterogeneous tuple with mapAs") {
     val errors = compileErrors("""
-      (1, "a").mapOnly[Int]([t <: Int] => (x: t) => List(x))
+      (1, "a").mapAs[Int]([t <: Int] => (x: t) => List(x))
     """)
     assert(errors.nonEmpty)
   }
 
-  test("does not compile: wrong target type with mapOnly") {
+  test("does not compile: wrong target type with mapAs") {
     val errors = compileErrors("""
-      (1, 2, 3).mapOnly[String]([t <: String] => (x: t) => List(x))
+      (1, 2, 3).mapAs[String]([t <: String] => (x: t) => List(x))
     """)
     assert(errors.nonEmpty)
   }
 
   test("does not compile: Int and Double mix") {
     val errors = compileErrors("""
-      (1, 2.0).mapOnly[Int]([t <: Int] => (x: t) => List(x))
+      (1, 2.0).mapAs[Int]([t <: Int] => (x: t) => List(x))
     """)
     assert(errors.nonEmpty)
   }
 
   test("does not compile: Boolean among Ints") {
     val errors = compileErrors("""
-      (1, true, 2).mapOnly[Int]([t <: Int] => (x: t) => List(x))
+      (1, true, 2).mapAs[Int]([t <: Int] => (x: t) => List(x))
     """)
     assert(errors.nonEmpty)
   }
 
   test("does not compile: String among Ints at end") {
     val errors = compileErrors("""
-      (1, 2, "three").mapOnly[Int]([t <: Int] => (x: t) => List(x))
+      (1, 2, "three").mapAs[Int]([t <: Int] => (x: t) => List(x))
     """)
     assert(errors.nonEmpty)
   }
 
   test("does not compile: String among Ints at start") {
     val errors = compileErrors("""
-      ("zero", 1, 2).mapOnly[Int]([t <: Int] => (x: t) => List(x))
+      ("zero", 1, 2).mapAs[Int]([t <: Int] => (x: t) => List(x))
     """)
     assert(errors.nonEmpty)
   }
@@ -217,14 +217,6 @@ class ContainsOnlyTest extends munit.FunSuite:
     assertEquals(first, 1)
   }
 
-//  test("evidence allows indexed access") {
-//    val tuple: (Any, Any, Any) = (1, 2, 3)
-//    given tuple.type containsOnly Int = containsOnly.refl
-//
-//    val second: Int = tuple(1)
-//    assertEquals(second, 2)
-//  }
-
   test("evidence allows last access") {
     val tuple: Tuple = (1, 2, 3)
     given tuple.type containsOnly Int = containsOnly.refl
@@ -232,69 +224,11 @@ class ContainsOnlyTest extends munit.FunSuite:
     val last: Int = tuple.last
     assertEquals(last, 3)
   }
-//
-//  test("evidence allows drop") {
-//    val tuple: Tuple = (1, 2, 3)
-//    given tuple.type containsOnly Int = containsOnly.refl
-//
-//    val dropped: (Int, Int) = tuple.drop(1)
-//    assertEquals(dropped.toList, List(2, 3))
-//  }
-//
-//  test("evidence allows take") {
-//    val tuple: Tuple = (1, 2, 3)
-//    given tuple.type containsOnly Int = containsOnly.refl
-//
-//    val taken: (Int, Int) = tuple.take(2)
-//    assertEquals(taken.toList, List(1, 2))
-//  }
-//
-//  test("evidence allows tail") {
-//    val tuple: Tuple = (1, 2, 3)
-//    given tuple.type containsOnly Int = containsOnly.refl
-//
-//    val rest: (Int, Int) = tuple.tail
-//    assertEquals(rest.toList, List(2, 3))
-//  }
-//
-//  test("evidence allows init") {
-//    val tuple: Tuple = (1, 2, 3)
-//    given tuple.type containsOnly Int = containsOnly.refl
-//
-//    val front: (Int, Int) = tuple.init
-//    assertEquals(front.toList, List(1, 2))
-//  }
-//
-//  test("evidence allows reverse") {
-//    val tuple: Tuple = (1, 2, 3)
-//    given tuple.type containsOnly Int = containsOnly.refl
-//
-//    val reversed: (Int, Int, Int) = tuple.reverse
-//    assertEquals(reversed.toList, List(3, 2, 1))
-//  }
-//
-//  test("evidence allows mapOnly") {
-//    val tuple: Tuple = (1, 2, 3)
-//    given tuple.type containsOnly Int = containsOnly.refl
-//
-//    val result = tuple.mapOnly[Int]([t <: Int] => (x: t) => List(x))
-//    assertEquals(result.toList, List(List(1), List(2), List(3)))
-//  }
 
-//  test("evidence allows toList") {
-//    val tuple: Tuple = (1, 2, 3)
-//    given tuple.type containsOnly Int = containsOnly.refl
-//
-//    assertEquals(tuple.toList, List(1, 2, 3))
-//  }
-//
-//  test("evidence allows concat") {
-//    val tuple: Tuple = (1, 2)
-//    given tuple.type containsOnly Int = containsOnly.refl
-//
-//    val result: Tuple = tuple ++ (3, 4)
-//    assertEquals(result.toList, List(1, 2, 3, 4))
-//  }
+  // `containsOnly` only provides Head/Last → T conversions today. Operations like
+  // `apply(i)`, `drop`, `take`, `tail`, `init`, `reverse`, `mapAs`, `toList`, `++`
+  // need the static tuple shape to reduce match types, which we don't carry on an
+  // abstract `Tuple` value. Coverage for those would require a richer evidence type.
 
   test("evidence on single element") {
     val tuple: Tuple = Tuple1(42)
@@ -311,4 +245,85 @@ class ContainsOnlyTest extends munit.FunSuite:
     val first: String = tuple.head
     assertEquals(first, "a")
     assertEquals(tuple.size, 3)
+  }
+
+  test("containsOnly is contravariant in Tup") {
+    sealed trait Fruit
+
+    class Apple extends Fruit
+
+    class Banana extends Fruit
+
+    summon[(Fruit, Fruit) containsOnly Fruit]
+    // Since (Apple, Apple) <: (Fruit, Fruit)
+    // and containsOnly is -Tup
+    // then containsOnly[(Fruit, Fruit), Fruit] <: containsOnly[(Apple, Apple), Fruit]
+    summon[(Apple, Apple) containsOnly Fruit]
+
+    type Super
+    type A <: Super
+    type B <: Super
+
+    summon[(A, A) containsOnly Super]
+    summon[(A, B) containsOnly Super]
+  }
+
+  test("containsOnly is covariant in T: singleton widens to Int") {
+    val tuple: Tuple = (3, 3, 3)
+    given (tuple.type containsOnly 3) = containsOnly.refl
+
+    summon[tuple.type containsOnly Int]
+  }
+
+  test("containsOnly is covariant in T: subclass widens to superclass") {
+    sealed trait Fruit
+    class Apple extends Fruit
+
+    val tuple: Tuple = ("a", "b")
+
+    given (tuple.type containsOnly Apple) = containsOnly.refl
+
+    summon[tuple.type containsOnly Fruit]
+  }
+
+  test("containsOnly is covariant in T: abstract type bound widens") {
+    type Super
+    type A <: Super
+
+    val tuple: Tuple = ("a", "b")
+
+    given (tuple.type containsOnly A) = containsOnly.refl
+
+    summon[tuple.type containsOnly Super]
+  }
+
+  test("containsOnly is covariant in T: String literal widens to String") {
+    val tuple: Tuple = ("a", "b")
+    given (tuple.type containsOnly "a") = containsOnly.refl
+
+    summon[tuple.type containsOnly String]
+  }
+
+  test("any tuple containsOnly Any without explicit evidence") {
+    val tuple = ("a", "b")
+
+    summon[tuple.type containsOnly Any]
+  }
+
+  test("heterogeneous tuple containsOnly Any") {
+    summon[(Int, String, Boolean) containsOnly Any]
+  }
+
+  test("abstract Tuple containsOnly Any") {
+    val tuple: Tuple = (1, "x", true)
+
+    summon[tuple.type containsOnly Any]
+  }
+
+  test("EmptyTuple containsOnly Any") {
+    summon[EmptyTuple containsOnly Any]
+  }
+
+  test("nested tuple containsOnly Any") {
+    summon[((Int, Int), (String, String)) containsOnly Any]
   }

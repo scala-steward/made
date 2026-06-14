@@ -79,7 +79,6 @@ class FieldAnnotationTest extends munit.FunSuite:
     val x *: EmptyTuple = mirror.elems
     assertEquals(x.label, "renamed")
     assert(x.hasAnnotation[Marker])
-    assert(x.hasAnnotation[name])
   }
 
   // --- Annotation on @generated member ---
@@ -90,6 +89,65 @@ class FieldAnnotationTest extends munit.FunSuite:
     assert(gen.hasAnnotation[Tag])
     assertEquals(gen.getAnnotation[Tag].get.value, "computed")
     assert(gen.hasAnnotation[generated])
+  }
+
+  // --- Compile-time singleton narrowing ---
+
+  test("hasAnnotation narrows to singleton true/false") {
+    val mirror = Made.derived[AnnotatedFields]
+    val x *: y *: _ *: EmptyTuple = mirror.elems
+    val b1: true = x.hasAnnotation[Marker]
+    val b2: false = y.hasAnnotation[Marker]
+    assert(b1)
+    assert(!b2)
+  }
+
+  test("getAnnotation narrows to singleton Some/None") {
+    val mirror = Made.derived[AnnotatedFields]
+    val x *: y *: _ *: EmptyTuple = mirror.elems
+    val s: Some[Marker] = x.getAnnotation[Marker]
+    val n: None.type = y.getAnnotation[Marker]
+    assert(s.value.isInstanceOf[Marker])
+    assertEquals(n, None)
+  }
+
+  test("inline if on hasAnnotation specialises at compile time") {
+    val mirror = Made.derived[AnnotatedFields]
+    val x *: y *: _ *: EmptyTuple = mirror.elems
+    inline def tag(has: Boolean): String =
+      inline if has then "yes" else "no"
+    assertEquals(tag(x.hasAnnotation[Marker]), "yes")
+    assertEquals(tag(y.hasAnnotation[Marker]), "no")
+  }
+
+  // --- Plural tuple-of-elements queries ---
+
+  test("hasAnnotations returns tuple of singleton booleans") {
+    val mirror = Made.derived[AnnotatedFields]
+    val flags: (true, false, true) = mirror.elems.hasAnnotations[Marker]
+    assertEquals(flags, (true, false, true))
+  }
+
+  test("getAnnotations returns tuple of singleton Some/None") {
+    val mirror = Made.derived[AnnotatedFields]
+    val opts: (Some[Marker], None.type, Some[Marker]) = mirror.elems.getAnnotations[Marker]
+    assert(opts._1.value.isInstanceOf[Marker])
+    assertEquals(opts._2, None)
+    assert(opts._3.value.isInstanceOf[Marker])
+  }
+
+  test("hasAnnotations / getAnnotations narrow per-element") {
+    val mirror = Made.derived[FieldWithParamAnnotation]
+    val flags: (true, true) = mirror.elems.hasAnnotations[Tag]
+    val opts: (Some[Tag], Some[Tag]) = mirror.elems.getAnnotations[Tag]
+    assertEquals(flags, (true, true))
+    assertEquals(opts._1.value.value, "primary")
+    assertEquals(opts._2.value.value, "secondary")
+  }
+
+  test("hasAnnotations on EmptyTuple") {
+    val flags: EmptyTuple = EmptyTuple.hasAnnotations[Marker]
+    assertEquals(flags, EmptyTuple)
   }
 
 // --- Fixtures ---

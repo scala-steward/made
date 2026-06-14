@@ -1,5 +1,7 @@
 package made.annotation
 
+import scala.annotation.RefiningAnnotation
+
 /**
  * Overrides the `Label` type member for the annotated type or field.
  *
@@ -12,4 +14,4 @@ package made.annotation
  * @see [[made.MadeElem]]
  * @see [[MetaAnnotation]]
  */
-class name(val name: String) extends MetaAnnotation
+class name(val name: String) extends RefiningAnnotation

@@ -29,6 +29,7 @@ object TransparentWrapping:
     reusableIdentity.asInstanceOf[TransparentWrapping[T, T]]
 
   inline def derived[R, T]: TransparentWrapping[R, T] = ${ derivedImpl[R, T] }
+  // $COVERAGE-OFF$
   private def derivedImpl[R: Type, T: Type](using quotes: Quotes): Expr[TransparentWrapping[R, T]] =
     import quotes.reflect.*
 
@@ -54,3 +55,4 @@ object TransparentWrapping:
         }
       case '[fieldType] =>
         report.errorAndAbort(s"Expected a single case field of type ${TypeRepr.of[fieldType]} for ${symbol.name}")
+// $COVERAGE-ON$

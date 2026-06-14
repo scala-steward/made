@@ -1,6 +1,9 @@
 package made
 
 import made.annotation.*
+import made.util.SnippetCompiler
+import made.util.SnippetCompiler.containsMessage
+
 class GeneratedAnnotationTest extends munit.FunSuite:
   import GeneratedAnnotationTest.*
 
@@ -12,12 +15,12 @@ class GeneratedAnnotationTest extends munit.FunSuite:
     type Expected = GeneratedMadeElem {
       type Type = String
       type Label = "ab"
-      type Metadata = Meta @generated
+      type Metadata = (Meta @generated) *: EmptyTuple
       type OuterType = Prod
     } *: GeneratedMadeElem {
       type Type = Int
       type Label = "len"
-      type Metadata = Meta @generated
+      type Metadata = (Meta @generated) *: EmptyTuple
       type OuterType = Prod
     } *: EmptyTuple
 
@@ -35,7 +38,7 @@ class GeneratedAnnotationTest extends munit.FunSuite:
     type Expected = GeneratedMadeElem {
       type Type = String
       type Label = "upper"
-      type Metadata = Meta @generated
+      type Metadata = (Meta @generated) *: EmptyTuple
       type OuterType = VC
     } *: EmptyTuple
 
@@ -51,7 +54,7 @@ class GeneratedAnnotationTest extends munit.FunSuite:
     type Expected = GeneratedMadeElem {
       type Type = Int
       type Label = "const"
-      type Metadata = Meta @generated
+      type Metadata = (Meta @generated) *: EmptyTuple
       type OuterType = SumADT
     } *: EmptyTuple
 
@@ -68,7 +71,7 @@ class GeneratedAnnotationTest extends munit.FunSuite:
     type Expected = GeneratedMadeElem {
       type Type = String
       type Label = "info"
-      type Metadata = Meta @generated
+      type Metadata = (Meta @generated) *: EmptyTuple
       type OuterType = GenEnum
     } *: EmptyTuple
 
@@ -85,7 +88,7 @@ class GeneratedAnnotationTest extends munit.FunSuite:
     type Expected = GeneratedMadeElem {
       type Type = Int
       type Label = "id"
-      type Metadata = Meta @generated
+      type Metadata = (Meta @generated) *: EmptyTuple
       type OuterType = GenObj.type
     } *: EmptyTuple
 
@@ -159,6 +162,22 @@ class GeneratedAnnotationTest extends munit.FunSuite:
     val gen *: EmptyTuple = m.generatedElems
     assertEquals(gen.label, "custom_gen")
     assertEquals(gen(GenWithName(42)), "42")
+  }
+
+  test("@generated def with parameters is rejected") {
+    val diags = SnippetCompiler.compile(
+      // language=scala 3
+      """import made.*
+        |import made.annotation.generated
+        |case class WithParam(x: Int):
+        |  @generated def shifted(by: Int): Int = x + by
+        |object S { val _ = Made.derived[WithParam] }
+        |""".stripMargin,
+    )
+    assert(
+      diags.containsMessage("@generated cannot be applied to methods with parameters"),
+      s"expected '@generated cannot be applied to methods with parameters' but got: $diags",
+    )
   }
 
 object GeneratedAnnotationTest:

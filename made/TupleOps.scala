@@ -15,12 +15,7 @@ extension (tup: Tuple)
     : Tuple.Map[tup.type, [X] =>> F[X & T]] =
     tup.map[[X] =>> F[X & T]]([t] => (t: t) => f(t.asInstanceOf[t & T]))
 
-// `Tup` is a type parameter (not `tup.type`) so the `containsOnly` evidence is
-// summoned against the widened tuple type. This lets abstract mapped tuples such
-// as `Made` mirrors' `ElemLabels` satisfy the constraint via a dedicated given,
-// where the singleton `tup.type` would not match.
-extension [Tup <: Tuple](tup: Tup)
-  def toArrayOf[T: ClassTag](using Tup containsOnly T): Array[T] = tup match
+  def toArrayOf[T](using tup.type containsOnly T)(using ClassTag[T]): Array[T] = tup match
     case EmptyTuple => Array.empty[T]
     case self: Product =>
       val arr = new Array[T](self.productArity)

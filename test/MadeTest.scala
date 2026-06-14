@@ -11,13 +11,15 @@ class MadeTest extends munit.FunSuite:
       type Elems = MadeFieldElem {
         type Type = Long
         type Label = "id"
-        type Metadata = Meta
+        type Metadata = EmptyTuple
+        type OuterType = SimpleCaseClass
       } *: MadeFieldElem {
         type Type = String
         type Label = "name"
-        type Metadata = Meta
+        type Metadata = EmptyTuple
+        type OuterType = SimpleCaseClass
       } *: EmptyTuple
-      type Metadata = Meta
+      type Metadata = EmptyTuple
     } = Made.derived[SimpleCaseClass]
   }
 
@@ -25,7 +27,7 @@ class MadeTest extends munit.FunSuite:
     val _: Made.Product {
       type Type = NoFields
       type Label = "NoFields"
-      type Metadata = Meta
+      type Metadata = EmptyTuple
       type Elems = EmptyTuple
     } = Made.derived[NoFields]
   }
@@ -34,11 +36,12 @@ class MadeTest extends munit.FunSuite:
     val _: Made.Product {
       type Type = Box[Int]
       type Label = "Box"
-      type Metadata = Meta
+      type Metadata = EmptyTuple
       type Elems = MadeFieldElem {
         type Type = Int
         type Label = "a"
-        type Metadata = Meta
+        type Metadata = EmptyTuple
+        type OuterType = Box[Int]
       } *: EmptyTuple
     } = Made.derived[Box[Int]]
   }
@@ -47,15 +50,15 @@ class MadeTest extends munit.FunSuite:
     val _: Made.Sum {
       type Type = SimpleEnum
       type Label = "SimpleEnum"
-      type Metadata = Meta
+      type Metadata = EmptyTuple
       type Elems = MadeSubSingletonElem {
         type Type = SimpleEnum.Case1.type
         type Label = "Case1"
-        type Metadata = Meta
+        type Metadata = EmptyTuple
       } *: MadeSubElem {
         type Type = SimpleEnum.Case2
         type Label = "Case2"
-        type Metadata = Meta
+        type Metadata = EmptyTuple
       } *: EmptyTuple
     } = Made.derived[SimpleEnum]
   }
@@ -64,7 +67,7 @@ class MadeTest extends munit.FunSuite:
     val mirror: Made.Singleton {
       type Type = SimpleObject.type
       type Label = "SimpleObject"
-      type Metadata = Meta
+      type Metadata = EmptyTuple
       type Elems = EmptyTuple
     } = Made.derived[SimpleObject.type]
 
@@ -75,7 +78,7 @@ class MadeTest extends munit.FunSuite:
     val mirror: Made.Singleton {
       type Type = Unit
       type Label = "Unit"
-      type Metadata = Meta
+      type Metadata = EmptyTuple
     } = Made.derived[Unit]
     assert(mirror.value == ())
   }
@@ -84,7 +87,7 @@ class MadeTest extends munit.FunSuite:
     val mirror: Made.Product {
       type Type = ValueClass
       type Label = "ValueClass"
-      type Metadata = Meta
+      type Metadata = EmptyTuple
     } = Made.derived[ValueClass]
     assert(mirror.fromUnsafeArray(Array("test")) == ValueClass("test"))
   }
@@ -93,12 +96,13 @@ class MadeTest extends munit.FunSuite:
     val mirror: Made.Transparent {
       type Type = TransparentClass
       type Label = "TransparentClass"
-      type Metadata = Meta @transparent
+      type Metadata = (Meta @transparent) *: EmptyTuple
       type ElemType = Int
       type Elems = MadeFieldElem {
         type Type = Int
         type Label = "int"
-        type Metadata = Meta
+        type Metadata = EmptyTuple
+        type OuterType = TransparentClass
       } *: EmptyTuple
     } = Made.derived[TransparentClass]
 
@@ -109,7 +113,7 @@ class MadeTest extends munit.FunSuite:
 
   test("getAnnotation and hasAnnotation") {
     val mirror = Made.derived[AnnotatedCaseClass]
-    summon[mirror.Metadata =:= (Meta @Annotation2 @Annotation1)]
+    summon[mirror.Metadata =:= ((Meta @Annotation2) *: (Meta @Annotation1) *: EmptyTuple)]
 
     assert(mirror.hasAnnotation[Annotation1])
     assert(mirror.hasAnnotation[Annotation2])
@@ -128,13 +132,13 @@ class MadeTest extends munit.FunSuite:
 
   test("DerMirror with annotations") {
     val _: Made {
-      type Metadata = Meta @Annotation2 @Annotation1
+      type Metadata = (Meta @Annotation2) *: (Meta @Annotation1) *: EmptyTuple
     } = Made.derived[AnnotatedCaseClass]
   }
 
   test("DerMirror with many annotations") {
     val _: Made {
-      type Metadata = Meta @Annotation3 @Annotation2 @Annotation1
+      type Metadata = (Meta @Annotation3) *: (Meta @Annotation2) *: (Meta @Annotation1) *: EmptyTuple
     } = Made.derived[ManyAnnotated]
   }
 
@@ -142,7 +146,7 @@ class MadeTest extends munit.FunSuite:
     val _: Made.Sum {
       type Type = NamedEnum
       type Label = "NamedEnum"
-      type Metadata = Meta
+      type Metadata = EmptyTuple
       type Elems <: MadeElem {
         type Type = NamedEnum.Case1.type
         type Label = "C1"
@@ -150,7 +154,7 @@ class MadeTest extends munit.FunSuite:
       } *: MadeElem {
         type Type = NamedEnum.Case2.type
         type Label = "Case2"
-        type Metadata = Meta
+        type Metadata = EmptyTuple
       } *: EmptyTuple
     } = Made.derived[NamedEnum]
   }
@@ -159,15 +163,15 @@ class MadeTest extends munit.FunSuite:
     val _: Made.Sum {
       type Type = Recursive
       type Label = "Recursive"
-      type Metadata = Meta
+      type Metadata = EmptyTuple
       type Elems = MadeSubSingletonElem {
         type Type = Recursive.End.type
         type Label = "End"
-        type Metadata = Meta
+        type Metadata = EmptyTuple
       } *: MadeSubElem {
         type Type = Recursive.Next
         type Label = "Next"
-        type Metadata = Meta
+        type Metadata = EmptyTuple
       } *: EmptyTuple
     } = Made.derived[Recursive]
   }
@@ -176,15 +180,15 @@ class MadeTest extends munit.FunSuite:
     val _: Made.Sum {
       type Type = MixedADT
       type Label = "MixedADT"
-      type Metadata = Meta
+      type Metadata = EmptyTuple
       type Elems = MadeSubElem {
         type Type = MixedADT.CaseClass
         type Label = "CaseClass"
-        type Metadata = Meta
+        type Metadata = EmptyTuple
       } *: MadeSubSingletonElem {
         type Type = MixedADT.CaseObj.type
         type Label = "CaseObj"
-        type Metadata = Meta
+        type Metadata = EmptyTuple
       } *: EmptyTuple
     } = Made.derived[MixedADT]
   }
@@ -193,17 +197,18 @@ class MadeTest extends munit.FunSuite:
     val m: Made {
       type Type = HasGenerated
       type Label = "HasGenerated"
-      type Metadata = Meta
+      type Metadata = EmptyTuple
       type Elems = MadeFieldElem {
         type Type = String
         type Label = "str"
-        type Metadata = Meta
+        type Metadata = EmptyTuple
+        type OuterType = HasGenerated
       } *: EmptyTuple
       type GeneratedElems = GeneratedMadeElem {
         type OuterType = HasGenerated
         type Type = Int
         type Label = "gen"
-        type Metadata = Meta @generated
+        type Metadata = (Meta @generated) *: EmptyTuple
       } *: EmptyTuple
     } = Made.derived[HasGenerated]
 
@@ -215,11 +220,12 @@ class MadeTest extends munit.FunSuite:
     val _: Made.Product {
       type Type = HKBox[List]
       type Label = "HKBox"
-      type Metadata = Meta
+      type Metadata = EmptyTuple
       type Elems = MadeFieldElem {
         type Type = List[Int]
         type Label = "fa"
-        type Metadata = Meta
+        type Metadata = EmptyTuple
+        type OuterType = HKBox[List]
       } *: EmptyTuple
     } = Made.derived[HKBox[List]]
   }
@@ -228,15 +234,15 @@ class MadeTest extends munit.FunSuite:
     val _: Made.Sum {
       type Type = HKADT[List, Int]
       type Label = "HKADT"
-      type Metadata = Meta
+      type Metadata = EmptyTuple
       type Elems = MadeSubElem {
         type Type = HKADT.Case1[List, Int]
         type Label = "Case1"
-        type Metadata = Meta
+        type Metadata = EmptyTuple
       } *: MadeSubElem {
         type Type = HKADT.Case2[List, Int]
         type Label = "Case2"
-        type Metadata = Meta
+        type Metadata = EmptyTuple
       } *: EmptyTuple
     } = Made.derived[HKADT[List, Int]]
   }
@@ -245,11 +251,12 @@ class MadeTest extends munit.FunSuite:
     val _: Made.Product {
       type Type = Recursive.Next
       type Label = "Next"
-      type Metadata = Meta
+      type Metadata = EmptyTuple
       type Elems = MadeFieldElem {
         type Type = Recursive
         type Label = "r"
-        type Metadata = Meta
+        type Metadata = EmptyTuple
+        type OuterType = Recursive.Next
       } *: EmptyTuple
     } = Made.derived[Recursive.Next]
   }
@@ -264,19 +271,22 @@ class MadeTest extends munit.FunSuite:
     val _: Made.Product {
       type Type = RecTree
       type Label = "RecTree"
-      type Metadata = Meta
+      type Metadata = EmptyTuple
       type Elems = MadeFieldElem {
         type Type = Int
         type Label = "value"
-        type Metadata = Meta
+        type Metadata = EmptyTuple
+        type OuterType = RecTree
       } *: MadeFieldElem {
         type Type = Option[RecTree]
         type Label = "left"
-        type Metadata = Meta
+        type Metadata = EmptyTuple
+        type OuterType = RecTree
       } *: MadeFieldElem {
         type Type = Option[RecTree]
         type Label = "right"
-        type Metadata = Meta
+        type Metadata = EmptyTuple
+        type OuterType = RecTree
       } *: EmptyTuple
     } = Made.derived[RecTree]
   }
@@ -293,10 +303,10 @@ class MadeTest extends munit.FunSuite:
     val _: Made.Product {
       type Type = Box[?]
       type Label = "Box"
-      type Metadata = Meta;
+      type Metadata = EmptyTuple;
       type Elems <: MadeElem {
         type Label = "a"
-        type Metadata = Meta
+        type Metadata = EmptyTuple
       } *: EmptyTuple
     } = Made.derived[Box[?]]
   }

@@ -8,3 +8,5 @@ subsection:
     page: generated-members.md
   - title: Transparent Wrapping
     page: transparent-wrapping.md
+  - title: Annotations and Metadata
+    page: annotations.md

@@ -2,7 +2,7 @@ package made
 
 import made.annotation.*
 
-import scala.annotation.{implicitNotFound, Annotation}
+import scala.annotation.{implicitNotFound, tailrec}
 import scala.deriving.Mirror
 import scala.quoted.*
 
@@ -20,14 +20,14 @@ import scala.quoted.*
  *
  * case class User(name: String, age: Int)
  *
- * val mirror: Made.Of[User] = Made.derived[User]
+ * val mirror = Made.derived[User]
  * // mirror type members:
  * //   type Type = User
  * //   type Label = "User"
- * //   type Metadata = Meta
+ * //   type Metadata = EmptyTuple
  * //   type Elems = MadeFieldElem { ... } *: MadeFieldElem { ... } *: EmptyTuple
  *
- * val (nameFld, ageFld) = mirror.mirroredElems
+ * val (nameFld, ageFld) = mirror.elems
  * val user = mirror.fromUnsafeArray(Array("Alice", 30))
  * }}}
  *
@@ -53,12 +53,12 @@ sealed trait Made:
   type Label <: String
 
   /**
-   * Annotation metadata on `T`, represented as an `AnnotatedType` chain wrapping the [[Meta]]
-   * base type. When no `MetaAnnotation` annotations are present, `Metadata = Meta`. When
-   * annotations are present, `Metadata` becomes `Meta @Ann1 @Ann2 ...`.
-   * Query at runtime via [[hasAnnotation]] and [[getAnnotation]].
+   * Annotation metadata on `T`, represented as a [[Tuple]] of `Meta @ann` entries. When no
+   * `MetaAnnotation` annotations are present, `Metadata = EmptyTuple`. When annotations are
+   * present, `Metadata` becomes `(Meta @Ann1, Meta @Ann2, ...)`. Query via [[hasAnnotation]]
+   * and [[getAnnotation]].
    */
-  type Metadata <: Meta
+  type Metadata <: Tuple
 
   /** Tuple of [[MadeElem]] subtypes representing constructor fields (for products) or subtypes (for sums). */
   type Elems <: Tuple
@@ -67,6 +67,36 @@ sealed trait Made:
   type GeneratedElems <: Tuple
   def elems: Elems
   def generatedElems: GeneratedElems
+
+  /**
+   * Path-dependent evidence: the mirror's [[Elems]] tuple is guaranteed by the deriver to be
+   * a tuple of [[MadeElem]]s. Available wherever this `Made` instance is in scope so plural
+   * extensions like `made.elems.hasAnnotations[A]` summon evidence without explicit imports.
+   */
+  given Elems containsOnly MadeElem = containsOnly.refl
+
+  /**
+   * Path-dependent evidence: the mirror's [[Metadata]] tuple is a tuple of `Meta` (or
+   * `Meta @ann`) entries. Mirrors the guarantee for `hasAnnotation[A]` / `getAnnotation[A]`.
+   */
+  given Metadata containsOnly Meta = containsOnly.refl
+
+  /**
+   * Path-dependent evidence: the mirror's [[GeneratedElems]] tuple is a tuple of
+   * [[GeneratedMadeElem]]s. Enables `made.generatedElems.hasAnnotations[A]` analogous to
+   * `made.elems.hasAnnotations[A]`.
+   */
+  given GeneratedElems containsOnly GeneratedMadeElem = containsOnly.refl
+
+  /**
+   * Path-dependent evidence: the mirror's [[ElemLabels]] tuple contains only `String`s.
+   * `MadeElem.ExtractLabel` is upper-bounded by `String`, so every element of
+   * `Tuple.Map[Elems, ExtractLabel]` is statically a `String` — but the structural
+   * derivation cannot prove this because `Elems` is abstract and the `Tuple.Map` never
+   * reduces. Supplying it directly lets `made.elemLabels` be used with tuple ops such as
+   * `toArrayOf[String]`.
+   */
+  given ElemLabels containsOnly String = containsOnly.refl
 
 /**
  * Base type for elements within a [[Made.Elems]] tuple.
@@ -105,12 +135,15 @@ sealed trait MadeElem:
   type Label <: String
 
   /**
-   * Annotation metadata on `T`, represented as an `AnnotatedType` chain wrapping the [[Meta]]
-   * base type. When no `MetaAnnotation` annotations are present, `Metadata = Meta`. When
-   * annotations are present, `Metadata` becomes `Meta @Ann1 @Ann2 ...`.
-   * Query at runtime via [[hasAnnotation]] and [[getAnnotation]].
+   * Annotation metadata on this element, represented as a [[Tuple]] of `Meta @ann` entries.
+   * When no `MetaAnnotation` annotations are present, `Metadata = EmptyTuple`. When annotations
+   * are present, `Metadata` becomes `(Meta @Ann1, Meta @Ann2, ...)`. Query via [[hasAnnotation]]
+   * and [[getAnnotation]].
    */
-  type Metadata <: Meta
+  type Metadata <: Tuple
+
+  /** Path-dependent evidence that this element's [[Metadata]] is a tuple of `Meta` entries. */
+  given Metadata containsOnly Meta = containsOnly.refl
 
 /**
  * Element representing a constructor parameter in a product type mirror.
@@ -124,6 +157,12 @@ sealed trait MadeElem:
  * @see [[Made.Product]]
  */
 sealed trait MadeFieldElem extends MadeElem:
+  /** The type that declares this field (the outer/owning type). */
+  type OuterType
+
+  /** Reads this field's value from an instance of the declaring type. */
+  def apply(outer: OuterType): Type
+
   /**
    * Resolves a default value for this field using the following priority chain (first match wins):
    *
@@ -138,6 +177,12 @@ sealed trait MadeFieldElem extends MadeElem:
 
 object MadeFieldElem:
   type Of[T] = MadeFieldElem { type Type = T }
+  type OuterOf[Outer] = MadeFieldElem { type OuterType = Outer }
+
+// workaround for https://github.com/scala/scala3/issues/25245
+private sealed trait MadeFieldElemWorkaround[Outer, Elem] extends MadeFieldElem:
+  final type OuterType = Outer
+  final type Type = Elem
 
 /**
  * Element representing a non-singleton subtype in a sum type mirror.
@@ -187,12 +232,6 @@ object MadeSubSingletonElem:
  * @see [[made.annotation.generated]]
  */
 sealed trait GeneratedMadeElem extends MadeFieldElem:
-  /** The type that declares the [[generated]] member. */
-  type OuterType
-
-  /** Computes the generated value from an instance of the declaring type. */
-  def apply(outer: OuterType): Type
-
   /** Always `None`; generated members have no constructor defaults. */
   final def default: Option[Type] = None
 
@@ -208,7 +247,7 @@ private sealed trait GeneratedMadeElemWorkaround[Outer, Elem] extends GeneratedM
 object MadeElem:
   type Of[T] = MadeElem { type Type = T }
   type LabelOf[l <: String] = MadeElem { type Label = l }
-  type MetaOf[m <: Meta] = MadeElem { type Metadata = m }
+  type MetaOf[m <: Tuple] = MadeElem { type Metadata = m }
 
   type ExtractOf[M /* <: MadeElem */ ] = M match
     case Of[t] => t
@@ -216,21 +255,8 @@ object MadeElem:
   type ExtractLabel[M /* <: MadeElem */ ] <: String = M match
     case LabelOf[label] => label
 
-  type ExtractMeta[M /* <: MadeElem */ ] <: Meta = M match
+  type ExtractMeta[M /* <: MadeElem */ ] <: Tuple = M match
     case MetaOf[meta] => meta
-
-  /**
-   * Evidence that a tuple of extracted labels contains only `String`s.
-   *
-   * `ExtractLabel` is upper-bounded by `String`, so every element of
-   * `Tuple.Map[Elems, ExtractLabel]` is statically a `String`. The structural
-   * `containsOnly.Loop` cannot prove this because `Elems` is abstract and the
-   * `Tuple.Map` never reduces; this given supplies the evidence directly so
-   * `Made` mirrors' [[Made.ElemLabels]] can be used with tuple ops such as
-   * `toArrayOf[String]`.
-   */
-  given [Elems <: Tuple] => (Tuple.Map[Elems, ExtractLabel] containsOnly String) = containsOnly.refl
-private trait Meta
 
 object Made:
   type Of[T] = Made { type Type = T }
@@ -240,7 +266,7 @@ object Made:
   type TransparentOf[T] = Made.Transparent { type Type = T; }
 
   type LabelOf[l <: String] = MadeElem { type Label = l }
-  type MetaOf[m <: Meta] = MadeElem { type Metadata = m }
+  type MetaOf[m <: Tuple] = MadeElem { type Metadata = m }
 
   type ExtractOf[M /* <: MadeElem */ ] = M match
     case Of[t] => t
@@ -248,7 +274,7 @@ object Made:
   type ExtractLabel[M /* <: MadeElem */ ] <: String = M match
     case LabelOf[label] => label
 
-  type ExtractMeta[M /* <: MadeElem */ ] <: Meta = M match
+  type ExtractMeta[M /* <: MadeElem */ ] <: Tuple = M match
     case MetaOf[meta] => meta
 
   /**
@@ -275,54 +301,38 @@ object Made:
    */
   transparent inline given derived[T]: Of[T] = ${ derivedImpl[T] }
 
+  // $COVERAGE-OFF$
   private def derivedImpl[T: Type](using quotes: Quotes): Expr[Made.Of[T]] =
     import quotes.reflect.*
+    val utils = new MacroUtils[quotes.type]
+    import utils.*
 
-    val tTpe = TypeRepr.of[T]
+    // dealiasKeepOpaques unfolds transparent aliases (e.g. `type AliasFoo = Foo`) so that
+    // the deriver sees the underlying case class while preserving opaque boundaries.
+    val tTpe = TypeRepr.of[T].dealiasKeepOpaques
     val tSymbol = tTpe.typeSymbol
 
-    def metaTypeOf(symbol: Symbol): Type[? <: Meta] =
-      val annotations = symbol.annotations.filter(_.tpe <:< TypeRepr.of[MetaAnnotation])
-      annotations
-        .foldRight(TypeRepr.of[Meta])((annot, tpe) => AnnotatedType(tpe, annot))
-        .asType
-        .asInstanceOf[Type[? <: Meta]]
-
-    extension (symbol: Symbol)
-      def hasAnnotationOf[AT <: Annotation: Type] =
-        symbol.hasAnnotation(TypeRepr.of[AT].typeSymbol)
-
-      def getAnnotationOf[AT <: Annotation: Type] =
-        symbol.getAnnotation(TypeRepr.of[AT].typeSymbol).map(_.asExprOf[AT])
-
-    def labelTypeOf(sym: Symbol, fallback: String): Type[? <: String] =
-      val syms = Iterator(sym) ++ sym.allOverriddenSymbols
-      val res = syms.find(_.hasAnnotationOf[name]).flatMap(_.getAnnotationOf[name])
-      stringToType(res match
-        case Some('{ new `name`($value) }) => value.valueOrAbort
-        case _ => fallback)
-
     val generatedElems = for
-      member <- tSymbol.fieldMembers ++ tSymbol.declaredMethods
-      if member.hasAnnotationOf[generated]
+      member <- (tSymbol.fieldMembers ++ tSymbol.methodMembers).distinct.sortBy(_.pos)
+      if member.hasOrInheritsAnnotationOf[generated]
       _ = if !(member.isValDef || member.isDefDef) then
         report.errorAndAbort(
           "@generated can only be applied to vals and defs.",
-          member.pos.getOrElse(Position.ofMacroExpansion),
+          member.pos.getOrElse(tSymbol.pos.getOrElse(Position.ofMacroExpansion)),
         )
       _ = member.paramSymss match
         case Nil => // no parameters, it's a val or a def without parameters
         case List(Nil) => // a def with empty parameter list
-        case paramLists =>
-          for
-            paramList <- paramLists
-            param <- paramList
-          do if !param.flags.is(Flags.EmptyFlags) then symbolInfo(param).dbg // todo
+        case _ =>
+          report.errorAndAbort(
+            s"@generated cannot be applied to methods with parameters: ${member.name}",
+            member.pos.getOrElse(tSymbol.pos.getOrElse(Position.ofMacroExpansion)),
+          )
     yield
       val elemTpe = tTpe.memberType(member).widen
 
       (elemTpe.asType, labelTypeOf(member, member.name), metaTypeOf(member)).runtimeChecked match
-        case ('[elemTpe], '[type elemLabel <: String; elemLabel], '[type meta <: Meta; meta]) =>
+        case ('[elemTpe], '[type elemLabel <: String; elemLabel], '[type meta <: Tuple; meta]) =>
           '{
             new GeneratedMadeElemWorkaround[T, elemTpe]:
               type Label = elemLabel
@@ -342,14 +352,20 @@ object Made:
 
     def madeFieldOf(field: Symbol): Expr[MadeFieldElem] =
       (field.termRef.widen.asType, labelTypeOf(field, field.name), metaTypeOf(field)).runtimeChecked match
-        case ('[fieldType], '[type elemLabel <: String; elemLabel], '[type fieldMeta <: Meta; fieldMeta]) =>
+        case ('[fieldType], '[type elemLabel <: String; elemLabel], '[type fieldMeta <: Tuple; fieldMeta]) =>
           '{
-            new MadeFieldElem:
-              type Type = fieldType
+            new MadeFieldElemWorkaround[T, fieldType]:
               type Label = elemLabel
               type Metadata = fieldMeta
 
+              def apply(outer: T): fieldType = ${ '{ outer }.asTerm.select(field).asExprOf[fieldType] }
               def default = ${ defaultOf[fieldType](0, field) }
+            : MadeFieldElem {
+              type Type = fieldType
+              type Label = elemLabel
+              type Metadata = fieldMeta
+              type OuterType = T
+            }
           }
 
     def defaultOf[E: Type](index: Int, symbol: Symbol): Expr[Option[E]] = Expr.ofOption {
@@ -387,11 +403,11 @@ object Made:
 
     (
       metaTypeOf(tSymbol),
-      labelTypeOf(tSymbol, tSymbol.name.stripSuffix("$")), // find a better way than stripping $
-      Expr.ofTupleFromSeq(generatedElems),
+      labelTypeOf(tSymbol, nameOf[T]),
+      Expr.ofRefinedTuple(generatedElems.toList),
     ).runtimeChecked match
       case (
-            '[type meta <: Meta; meta],
+            '[type meta <: Tuple; meta],
             '[type label <: String; label],
             '{ type generatedElems <: Tuple; $generatedElemsExpr: generatedElems },
           ) =>
@@ -490,6 +506,8 @@ object Made:
 
                   def fromUnsafeArray(product: Array[Any]): T =
                     ${ newTFrom(List('{ product(0).asInstanceOf[fieldType] })) }
+                  def fromTuple(elems: ElemTypes): T =
+                    ${ newTFrom(List('{ elems.head.asInstanceOf[fieldType] })) }
                 : Made.ProductOf[T] {
                   type Label = label
                   type Metadata = meta
@@ -502,34 +520,108 @@ object Made:
         def deriveProduct = Expr.summon[Mirror.ProductOf[T]].map {
           case '{
                 type mirroredElemTypes <: Tuple
-                type label <: String
+                type mirroredElemLabels <: Tuple
 
                 $m: Mirror.ProductOf[T] {
-                  type MirroredLabel = label
                   type MirroredElemTypes = mirroredElemTypes
+                  type MirroredElemLabels = mirroredElemLabels
                 }
               } =>
 
-            val (exprs, names) = tSymbol.caseFields.zipWithIndex
-              .zip(traverseTuple(Type.of[mirroredElemTypes]))
-              .foldLeft((Vector.empty[Expr[?]], Vector.empty[(label: String, original: String)])):
-                case ((exprs, names), ((fieldSymbol, index), '[fieldTpe])) =>
-                  (labelTypeOf(fieldSymbol, fieldSymbol.name), metaTypeOf(fieldSymbol)).runtimeChecked match
-                    case ('[type elemLabel <: String; elemLabel], '[type meta <: Meta; meta]) =>
-                      val expr = '{
-                        new MadeFieldElem:
-                          type Type = fieldTpe
-                          type Label = elemLabel
-                          type Metadata = meta
+            val hasFBound = tSymbol.tree match
+              case ClassDef(_, constructor, _, _, _) =>
+                @tailrec def containsTypeRef(stack: List[TypeRepr], sym: Symbol): Boolean = stack match
+                  case Nil => false
+                  case head :: _ if head.typeSymbol == sym => true
+                  case AppliedType(tycon, args) :: rest => containsTypeRef(tycon :: args ::: rest, sym)
+                  case Refinement(parent, _, refined) :: rest => containsTypeRef(parent :: refined :: rest, sym)
+                  case AnnotatedType(inner, _) :: rest => containsTypeRef(inner :: rest, sym)
+                  case TypeBounds(lo, hi) :: rest => containsTypeRef(lo :: hi :: rest, sym)
+                  case AndType(l, r) :: rest => containsTypeRef(l :: r :: rest, sym)
+                  case OrType(l, r) :: rest => containsTypeRef(l :: r :: rest, sym)
+                  case MatchType(bound, scrutinee, cases) :: rest =>
+                    containsTypeRef(bound :: scrutinee :: cases ::: rest, sym)
+                  case (tl: TypeLambda) :: rest => containsTypeRef(tl.paramBounds ::: tl.resType :: rest, sym)
+                  case _ :: rest => containsTypeRef(rest, sym)
 
-                          def default = ${ defaultOf[fieldTpe](index, fieldSymbol) }
+                constructor.leadingTypeParams.exists:
+                  case tp @ TypeDef(_, TypeBoundsTree(lo, hi)) => containsTypeRef(hi.tpe :: Nil, tp.symbol)
+                  case tp @ TypeDef(_, tt: TypeTree) => containsTypeRef(tt.tpe :: Nil, tp.symbol)
+                  case _ => false
+              case _ => false
+
+            val elemTypesList = traverseTuple(Type.of[mirroredElemTypes])
+            val elemLabelsList = traverseTuple(Type.of[mirroredElemLabels])
+
+            val (exprs, names) = if tSymbol.caseFields.sizeIs == elemTypesList.size then
+              elemTypesList
+                .lazyZip(elemLabelsList)
+                .lazyZip(tSymbol.caseFields)
+                .zipWithIndex
+                .foldLeft((Vector.empty[Expr[?]], Vector.empty[(label: String, original: String)])):
+                  case (
+                        (exprs, names),
+                        (('[fieldTpe], '[type mirrorLabel <: String; mirrorLabel], fieldSymbol), index),
+                      ) =>
+                    if hasFBound && TypeRepr.of[fieldTpe] =:= TypeRepr.of[Nothing] then
+                      report.warning(
+                        s"Field '${fieldSymbol.name}' of F-bounded case class ${tSymbol.fullName} resolves " +
+                          "to Nothing at this derivation site. The compiler-synthesized " +
+                          "Mirror.Product.fromProduct on F-bounded case classes emits `.asInstanceOf[Nothing]` " +
+                          "regardless of type-parameter substitution and will throw ClassCastException at " +
+                          "runtime when reading. See scala/scala3#26132.",
+                        fieldSymbol.pos.getOrElse(tSymbol.pos.getOrElse(Position.ofMacroExpansion)),
+                      )
+                    (labelTypeOf(fieldSymbol, fieldSymbol.name), metaTypeOf(fieldSymbol)).runtimeChecked match
+                      case ('[type elemLabel <: String; elemLabel], '[type meta <: Tuple; meta]) =>
+                        val expr = '{
+                          new MadeFieldElemWorkaround[T, fieldTpe]:
+                            type Label = elemLabel
+                            type Metadata = meta
+
+                            def apply(outer: T): fieldTpe = ${
+                              '{ outer }.asTerm.select(fieldSymbol).asExprOf[fieldTpe]
+                            }
+                            def default = ${ defaultOf[fieldTpe](index, fieldSymbol) }
+                          : MadeFieldElem {
+                            type Type = fieldTpe
+                            type Label = elemLabel
+                            type Metadata = meta
+                            type OuterType = T
+                          }
+                        }
+                        (exprs :+ expr, names :+ (typeToString[elemLabel], fieldSymbol.name))
+                  case _ => wontHappen
+            else
+              // named tuples
+              elemTypesList
+                .lazyZip(elemLabelsList)
+                .zipWithIndex
+                .foldLeft((Vector.empty[Expr[?]], Vector.empty[(label: String, original: String)])):
+                  case ((exprs, names), (('[fieldTpe], '[type mirrorLabel <: String; mirrorLabel]), index)) =>
+                    val expr = '{
+                      new MadeFieldElemWorkaround[T, fieldTpe]:
+                        type Label = mirrorLabel
+                        type Metadata = EmptyTuple
+
+                        def apply(outer: T): fieldTpe = outer
+                          .asInstanceOf[scala.Product]
+                          .productElement(${ Expr(index) })
+                          .asInstanceOf[fieldTpe]
+                        def default = ${ Expr(None) }
+                      : MadeFieldElem {
+                        type Type = fieldTpe
+                        type Label = mirrorLabel
+                        type Metadata = EmptyTuple
+                        type OuterType = T
                       }
-                      (exprs :+ expr, names :+ (typeToString[elemLabel], fieldSymbol.name))
-                case _ => wontHappen
+                    }
+                    (exprs :+ expr, names :+ (typeToString[mirrorLabel], typeToString[mirrorLabel]))
+                  case _ => wontHappen
 
             reportOnDuplicates(names)
 
-            Expr.ofTupleFromSeq(exprs) match
+            Expr.ofRefinedTuple(exprs.toList) match
               case '{ type mirroredElems <: Tuple; $mirroredElemsExpr: mirroredElems } =>
                 '{
                   new Made.Product:
@@ -540,6 +632,7 @@ object Made:
 
                     def elems: Elems = $mirroredElemsExpr
                     def fromUnsafeArray(product: Array[Any]): T = $m.fromProduct(Tuple.fromArray(product))
+                    def fromTuple(elems: ElemTypes): T = $m.fromProduct(elems)
 
                     type GeneratedElems = generatedElems
                     def generatedElems: GeneratedElems = $generatedElemsExpr
@@ -555,10 +648,8 @@ object Made:
         def deriveSum = Expr.summon[Mirror.SumOf[T]].map {
           case '{
                 type mirroredElemTypes <: Tuple
-                type label <: String
 
-                $_ : Mirror.SumOf[T] {
-                  type MirroredLabel = label
+                $m: Mirror.SumOf[T] {
                   type MirroredElemTypes = mirroredElemTypes
                 }
               } =>
@@ -570,7 +661,7 @@ object Made:
                   val subSymbol = if subType.termSymbol.isNoSymbol then subType.typeSymbol else subType.termSymbol
 
                   (labelTypeOf(subSymbol, subSymbol.name), metaTypeOf(subSymbol)).runtimeChecked match
-                    case ('[type elemLabel <: String; elemLabel], '[type meta <: Meta; meta]) =>
+                    case ('[type elemLabel <: String; elemLabel], '[type meta <: Tuple; meta]) =>
                       val expr = Type.of[subType] match
                         case '[type s <: scala.Singleton; s] =>
                           '{
@@ -593,7 +684,7 @@ object Made:
 
             reportOnDuplicates(names)
 
-            Expr.ofTupleFromSeq(exprs) match
+            Expr.ofRefinedTuple(exprs.toList) match
               case '{ type mirroredElems <: Tuple; $mirroredElemsExpr: mirroredElems } =>
                 '{
                   new Made.Sum:
@@ -602,6 +693,7 @@ object Made:
                     type Metadata = meta
                     type Elems = mirroredElems
                     def elems: Elems = $mirroredElemsExpr
+                    def ordinal(value: T): Int = $m.ordinal(value)
 
                     type GeneratedElems = generatedElems
                     def generatedElems: GeneratedElems = $generatedElemsExpr
@@ -620,6 +712,7 @@ object Made:
         deriveSingleton orElse deriveTransparent orElse deriveValueClass orElse deriveProduct orElse deriveSum getOrElse {
           report.errorAndAbort(s"Unsupported Mirror type for ${tTpe.show}")
         }
+  // $COVERAGE-ON$
 
   /**
    * Mirror for product types (case classes and value classes).
@@ -627,8 +720,8 @@ object Made:
    * Produced by [[Made.derived]] when `T` is a case class, a zero-field
    * case class, or a value class (extends `AnyVal`).
    *
-   * [[Made.Elems]] is a tuple of [[MadeFieldElem]] representing each
-   * constructor parameter. [[Made.GeneratedElem]] is a tuple of
+   * [[Elems]] is a tuple of [[MadeFieldElem]] representing each
+   * constructor parameter. [[GeneratedElems]] is a tuple of
    * [[GeneratedMadeElem]] for any `@generated` members.
    *
    * @see [[Made]]
@@ -641,6 +734,9 @@ object Made:
   sealed trait Product extends Made:
     /** Constructs an instance of `Type` from an untyped array of field values. */
     def fromUnsafeArray(product: Array[Any]): Type
+
+    /** Constructs an instance of `Type` from a typed tuple of field values. */
+    def fromTuple(elems: ElemTypes): Type
 
   /**
    * Mirror for sum types (sealed traits and enums).
@@ -656,7 +752,9 @@ object Made:
    * @see [[MadeSubElem]]
    * @see [[MadeSubSingletonElem]]
    */
-  sealed trait Sum extends Made
+  sealed trait Sum extends Made:
+    /** Returns the zero-based index of `value`'s runtime subtype within [[Elems]]. */
+    def ordinal(value: Type): Int
 
   /**
    * Mirror for singleton types (objects and Unit).

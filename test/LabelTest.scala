@@ -11,11 +11,10 @@ class LabelTest extends munit.FunSuite:
     assertEquals(mirror.label, "SimpleCaseClass")
   }
 
-  // todo: fix
-//  test("label for case class with @name") {
-//    val mirror = Made.derived[NamedProduct]
-//    assertEquals(mirror.label, "custom")
-//  }
+  test("label for case class with @name") {
+    val mirror = Made.derived[NamedProduct]
+    assertEquals(mirror.label, "custom")
+  }
 
   test("label for object") {
     val mirror = Made.derived[SimpleObject.type]
@@ -88,6 +87,12 @@ class LabelTest extends munit.FunSuite:
     assertEquals(field.label, "customName")
   }
 
+  test("elem label from @name subclass") {
+    val mirror = Made.derived[SubclassedNameField]
+    val field *: EmptyTuple = mirror.elems
+    assertEquals(field.label, "_id")
+  }
+
   // --- elemLabels extension ---
 
   test("elemLabels for product") {
@@ -144,11 +149,11 @@ class LabelTest extends munit.FunSuite:
     assertEquals(labels, "customName" *: EmptyTuple)
   }
 
-//  test("elemLabels for mixed ADT") {
-//    val mirror = Made.derived[LabelMixed]
-//    val labels: ("Leaf", "Branch") = mirror.elemLabels
-//    assertEquals(labels, ("Leaf", "Branch"))
-//  }
+  test("elemLabels for mixed ADT") {
+    val mirror = Made.derived[LabelMixed]
+    val labels: ("Branch", "Leaf") = mirror.elemLabels
+    assertEquals(labels, ("Branch", "Leaf"))
+  }
 
   // --- elem label matches elemLabels ---
 
@@ -161,20 +166,13 @@ class LabelTest extends munit.FunSuite:
     assertEquals(labels._3, z.label)
   }
 
-  // --- elem label from mapOnly matches elemLabels ---
-//
-//  test("elem label from mapOnly matches elemLabels") {
-//    val mirror = Made.derived[LabelProduct]
-//    val labels =
-//      mirror.elems.mapOnly[MadeElem { type Label <: String }]([m <: MadeElem { type Label <: String }] => m => m.label)
-//    val elemLabels = mirror.elemLabels
-//    assertEquals(labels, elemLabels)
-//  }
-
 // --- Fixtures ---
 
 @name("custom")
 case class NamedProduct(x: Int)
+
+class subclassedName(s: String) extends name(s)
+case class SubclassedNameField(@subclassedName("_id") id: String)
 
 case class LabelProduct(x: Int, y: String, z: Boolean)
 case class LabelNamedFields(@name("renamed_a") a: Int, b: String)

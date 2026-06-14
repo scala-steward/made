@@ -17,6 +17,60 @@ compile time that carry:
 
 Made supports case classes, enums, sealed traits, objects, value classes, and higher-kinded types.
 
+## Installation
+
+M&DE is published to Maven Central under `io.github.halotukozak`. Requires Scala 3.
+
+### scala-cli
+
+```scala
+//> using scala 3.8.4-RC2
+//> using dep io.github.halotukozak::made::0.1.0
+```
+
+### sbt
+
+```scala
+scalaVersion := "3.8.4-RC2"
+libraryDependencies += "io.github.halotukozak" %% "made" % "0.1.0"
+```
+
+### mill
+
+```scala
+def scalaVersion = "3.8.4-RC2"
+def mvDeps = Seq(mvn"io.github.halotukozak::made::0.1.0")
+```
+
+## Quickstart
+
+Derive a `Made` mirror for a case class and inspect its fields, labels, and annotations.
+
+```scala
+import made.*
+import made.annotation.*
+
+case class User(@name("user_name") name: String, age: Int = 18)
+
+val mirror = Made.derived[User]
+
+// Type-level
+//   mirror.Label       =:= "User"
+//   mirror.ElemLabels  =:= ("user_name", "age")
+//   mirror.ElemTypes   =:= (String, Int)
+
+// Runtime
+val (nameElem, ageElem) = mirror.elems
+nameElem.label  // "user_name"
+ageElem.default // Some(18)
+
+// Build values
+val u = mirror.fromUnsafeArray(Array("Alice", 30))
+```
+
+See the guides for full coverage of deriving type classes, default extraction, generated members, and transparent
+wrapping.
+
 ## Acknowledgements
 
 M&DE is inspired by:
