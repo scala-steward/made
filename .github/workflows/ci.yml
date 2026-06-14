@@ -34,7 +34,7 @@ jobs:
         run: scala-cli --power test . -O -coverage-out:./.scoverage -O '-coverage-exclude-files:.*test/.*'
       - name: Generate coverage
         run: scala-cli .scoverage/report.sc
-      - uses: codecov/codecov-action@v6
+      - uses: codecov/codecov-action@v7
         with:
           fail_ci_if_error: true
           files: .scoverage/report/cobertura.xml
