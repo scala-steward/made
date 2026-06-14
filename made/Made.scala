@@ -88,6 +88,16 @@ sealed trait Made:
    */
   given GeneratedElems containsOnly GeneratedMadeElem = containsOnly.refl
 
+  /**
+   * Path-dependent evidence: the mirror's [[ElemLabels]] tuple contains only `String`s.
+   * `MadeElem.ExtractLabel` is upper-bounded by `String`, so every element of
+   * `Tuple.Map[Elems, ExtractLabel]` is statically a `String` — but the structural
+   * derivation cannot prove this because `Elems` is abstract and the `Tuple.Map` never
+   * reduces. Supplying it directly lets `made.elemLabels` be used with tuple ops such as
+   * `toArrayOf[String]`.
+   */
+  given ElemLabels containsOnly String = containsOnly.refl
+
 /**
  * Base type for elements within a [[Made.Elems]] tuple.
  *
