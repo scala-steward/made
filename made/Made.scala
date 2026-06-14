@@ -218,6 +218,18 @@ object MadeElem:
 
   type ExtractMeta[M /* <: MadeElem */ ] <: Meta = M match
     case MetaOf[meta] => meta
+
+  /**
+   * Evidence that a tuple of extracted labels contains only `String`s.
+   *
+   * `ExtractLabel` is upper-bounded by `String`, so every element of
+   * `Tuple.Map[Elems, ExtractLabel]` is statically a `String`. The structural
+   * `containsOnly.Loop` cannot prove this because `Elems` is abstract and the
+   * `Tuple.Map` never reduces; this given supplies the evidence directly so
+   * `Made` mirrors' [[Made.ElemLabels]] can be used with tuple ops such as
+   * `toArrayOf[String]`.
+   */
+  given [Elems <: Tuple] => (Tuple.Map[Elems, ExtractLabel] containsOnly String) = containsOnly.refl
 private trait Meta
 
 object Made:
