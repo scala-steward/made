@@ -88,14 +88,7 @@ sealed trait Made:
    */
   given GeneratedElems containsOnly GeneratedMadeElem = containsOnly.refl
 
-  /**
-   * Path-dependent evidence: the mirror's [[ElemLabels]] tuple contains only `String`s.
-   * `MadeElem.ExtractLabel` is upper-bounded by `String`, so every element of
-   * `Tuple.Map[Elems, ExtractLabel]` is statically a `String` — but the structural
-   * derivation cannot prove this because `Elems` is abstract and the `Tuple.Map` never
-   * reduces. Supplying it directly lets `made.elemLabels` be used with tuple ops such as
-   * `toArrayOf[String]`.
-   */
+  /** [[ElemLabels]] is all `String`s; path-dependent, so it stays in scope for the `ElemLabels` alias. */
   given ElemLabels containsOnly String = containsOnly.refl
 
 /**
@@ -257,6 +250,9 @@ object MadeElem:
 
   type ExtractMeta[M /* <: MadeElem */ ] <: Tuple = M match
     case MetaOf[meta] => meta
+
+  /** `ExtractLabel <: String`, so any `Tuple.Map[Es, ExtractLabel]` is all `String`s (e.g. generated-elem labels). */
+  given [Es <: Tuple] => (Tuple.Map[Es, ExtractLabel] containsOnly String) = containsOnly.refl
 
 object Made:
   type Of[T] = Made { type Type = T }
@@ -738,11 +734,7 @@ object Made:
     /** Constructs an instance of `Type` from a typed tuple of field values. */
     def fromTuple(elems: ElemTypes): Type
 
-    /**
-     * Path-dependent evidence: a product mirror's [[Elems]] are all [[MadeFieldElem]]s
-     * (constructor fields). Refines the base `Elems containsOnly MadeElem` so `made.elems`
-     * can be mapped with field-level operations such as `mapAs[MadeFieldElem](_.default)`.
-     */
+    /** A product's [[Elems]] are all [[MadeFieldElem]]s; refines the base `containsOnly MadeElem`. */
     given Elems containsOnly MadeFieldElem = containsOnly.refl
 
   /**
