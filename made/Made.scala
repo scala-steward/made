@@ -755,6 +755,9 @@ object Made:
     /** Returns the zero-based index of `value`'s runtime subtype within [[Elems]]. */
     def ordinal(value: Type): Int
 
+    /** A sum's [[Elems]] are all [[MadeSubElem]]s; refines the base `containsOnly MadeElem`. */
+    given Elems containsOnly MadeSubElem = containsOnly.refl
+
   /**
    * Mirror for singleton types (objects and Unit).
    *
@@ -803,6 +806,9 @@ object Made:
     def wrap(value: ElemType): Type
 
     final def generatedElems: GeneratedElems = EmptyTuple
+
+    /** A transparent type's single [[Elems]] entry is a [[MadeFieldElem]]; refines `containsOnly MadeElem`. */
+    given Elems containsOnly MadeFieldElem = containsOnly.refl
 
   // workaround for https://github.com/scala/scala3/issues/25245
   private sealed trait TransparentWorkaround[T, U] extends Made.Transparent:
