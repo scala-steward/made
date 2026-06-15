@@ -22,6 +22,16 @@ class PathDependentEvidenceTest extends munit.FunSuite:
     summon[m.GeneratedElems containsOnly GeneratedMadeElem]
   }
 
+  test("Made.Sum: Elems containsOnly MadeSubElem summons without import") {
+    val m = Made.derived[PEnum]
+    summon[m.Elems containsOnly MadeSubElem]
+  }
+
+  test("Made.Transparent: Elems containsOnly MadeFieldElem summons without import") {
+    val m = Made.derived[PWrap]
+    summon[m.Elems containsOnly MadeFieldElem]
+  }
+
   test("Made: GeneratedElems containsOnly MadeElem via contravariance") {
     val m = Made.derived[PWithGenerated]
     summon[m.GeneratedElems containsOnly MadeElem]
@@ -127,6 +137,12 @@ object PathDependentEvidenceTest:
   class PMarker extends MetaAnnotation
 
   case class PProduct(a: Int, b: String)
+
+  enum PEnum:
+    case Cs(x: Int)
+    case Obj
+
+  @transparent case class PWrap(value: Int)
 
   @PMarker
   case class PAnnotated(@PMarker x: Int, y: String)
