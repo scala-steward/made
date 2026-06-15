@@ -738,6 +738,13 @@ object Made:
     /** Constructs an instance of `Type` from a typed tuple of field values. */
     def fromTuple(elems: ElemTypes): Type
 
+    /**
+     * Path-dependent evidence: a product mirror's [[Elems]] are all [[MadeFieldElem]]s
+     * (constructor fields). Refines the base `Elems containsOnly MadeElem` so `made.elems`
+     * can be mapped with field-level operations such as `mapAs[MadeFieldElem](_.default)`.
+     */
+    given Elems containsOnly MadeFieldElem = containsOnly.refl
+
   /**
    * Mirror for sum types (sealed traits and enums).
    *
