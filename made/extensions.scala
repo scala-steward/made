@@ -40,12 +40,14 @@ extension (es: Tuple)(using es.type containsOnly { type Metadata <: Tuple })
    * (e.g. a tuple of [[MadeElem]]s, [[GeneratedMadeElem]]s, or a singleton `Made` instance's
    * `Metadata` chain).
    */
-  transparent inline def hasAnnotations[A <: Annotation]: Tuple = ${ hasAnnotationsImpl[es.type, A] }
+  transparent inline def hasAnnotations[A <: Annotation]: Tuple.Map[es.type, [_] =>> Boolean] =
+    ${ hasAnnotationsImpl[es.type, A] }
 
   /**
    * Per-element [[getAnnotation]] over a tuple whose entries each declare a `Metadata` type member.
    */
-  transparent inline def getAnnotations[A <: Annotation]: Tuple = ${ getAnnotationsImpl[es.type, A] }
+  transparent inline def getAnnotations[A <: Annotation]: Tuple.Map[es.type, [_] =>> Option[A]] =
+    ${ getAnnotationsImpl[es.type, A] }
 
 // $COVERAGE-OFF$
 @publicInBinary private def getAnnotationImpl[A <: Annotation: Type, M <: Tuple: Type](using quotes: Quotes)
@@ -58,18 +60,21 @@ extension (es: Tuple)(using es.type containsOnly { type Metadata <: Tuple })
       .collectFirst:
         case AnnotatedType(_, annot) if annot.tpe <:< TypeRepr.of[A] => annot.asExprOf[A]
 
-@publicInBinary private def hasAnnotationImpl[A <: Annotation: Type, M <: Tuple: Type](using quotes: Quotes)
-  : Expr[Boolean] = Expr(getAnnotationImpl[A, M].isExprOf[Some[A]])
+@publicInBinary private def hasAnnotationImpl[A <: Annotation: Type, M <: Tuple: Type](using Quotes): Expr[Boolean] =
+  Expr(getAnnotationImpl[A, M].isExprOf[Some[A]])
 
-@publicInBinary private def hasAnnotationsImpl[Es <: Tuple: Type, A <: Annotation: Type](using quotes: Quotes)
-  : Expr[Tuple] = Expr.ofRefinedTuple:
-  traverseTuple(Type.of[Es]).map:
-    case '[type m <: Tuple; { type Metadata = m }] =>
-      hasAnnotationImpl[A, m]
+@publicInBinary private def hasAnnotationsImpl[Es <: Tuple: Type, A <: Annotation: Type](using Quotes)
+  : Expr[Tuple.Map[Es, [_] =>> Boolean]] = Expr
+  .ofRefinedTuple:
+    traverseTuple(Type.of[Es]).map:
+      case '[type m <: Tuple; { type Metadata = m }] => hasAnnotationImpl[A, m]
+  .asInstanceOf[Expr[Tuple.Map[Es, [_] =>> Boolean]]]
 
-@publicInBinary private def getAnnotationsImpl[Es <: Tuple: Type, A <: Annotation: Type](using quotes: Quotes)
-  : Expr[Tuple] = Expr.ofRefinedTuple:
-  traverseTuple(Type.of[Es]).map:
-    case '[type m <: Tuple; { type Metadata = m }] =>
-      getAnnotationImpl[A, m]
+@publicInBinary private def getAnnotationsImpl[Es <: Tuple: Type, A <: Annotation: Type](using Quotes)
+  : Expr[Tuple.Map[Es, [_] =>> Option[A]]] = Expr
+  .ofRefinedTuple:
+    traverseTuple(Type.of[Es]).map:
+      case '[type m <: Tuple; { type Metadata = m }] => getAnnotationImpl[A, m]
+  .asInstanceOf[Expr[Tuple.Map[Es, [_] =>> Option[A]]]]
+
 // $COVERAGE-ON$

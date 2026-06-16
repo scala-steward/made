@@ -82,6 +82,17 @@ sealed trait DoneOperation:
   /** Tuple of [[InputElem]] subtypes describing the operation's parameters, in declaration order. */
   type InputElems <: Tuple
 
+  /**
+   * Per-parameter-list arities, as a tuple of singleton `Int` types. Distinguishes method shapes
+   * that [[InputElems]] alone cannot:
+   *   - no-parens `def f` / `val`  => `EmptyTuple` (zero param lists)
+   *   - empty-parens `def f()`     => `0 *: EmptyTuple` (one empty param list)
+   *   - `def f(a)(b, c)`           => `1 *: 2 *: EmptyTuple`
+   * [[InputElems]] stays flattened; `ParamLists` records the list boundaries so dispatch can
+   * reconstruct them. (Phase 1 representation; full tuple-of-tuples is deferred.)
+   */
+  type ParamLists <: Tuple
+
   final type Args = Tuple.Map[InputElems, InputElem.ExtractOf]
 
   def inputElems: InputElems
@@ -242,27 +253,67 @@ object Done:
       val applied = if argLists.isEmpty then sel else sel.appliedToArgss(argLists)
       applied.asExprOf[Out]
 
+    // `methodMembers` (unlike `declaredMethods`) includes inherited-not-overridden members, but it
+    // also pulls in members from universal/framework base types (Any/Object, and the synthetic
+    // `Product`/`Equals`/`Enum` surface on case classes and enums: hashCode, equals, ==, canEqual,
+    // productArity, productElement, ordinal, etc.). The filter below keeps only user-declared
+    // val/def operations and drops that noise by owner + synthetic/artifact flags.
+    val excludedOwners: Set[Symbol] = Set(
+      defn.AnyClass,
+      defn.AnyValClass,
+      TypeRepr.of[Object].typeSymbol,
+      TypeRepr.of[Product].typeSymbol,
+      TypeRepr.of[Equals].typeSymbol,
+      TypeRepr.of[scala.reflect.Enum].typeSymbol,
+    )
     val operations =
       for
-        member <- (tSymbol.fieldMembers ++ tSymbol.declaredMethods).sortBy(_.pos.getOrElse(Position.ofMacroExpansion))
+        member <- (tSymbol.fieldMembers ++ tSymbol.methodMembers).distinct
+          .sortBy(_.pos.getOrElse(Position.ofMacroExpansion))
+        if member.isDefDef || member.isValDef
+        if !member.isClassConstructor
+        if !member.flags.is(Flags.Synthetic) && !member.flags.is(Flags.Artifact)
+        if !excludedOwners.contains(member.owner)
         opTpe = tTpe.memberType(member).widen
         extract(params, outputTpe) = opTpe.runtimeChecked
       yield
-        val inputElems = params.map:
-          case ('[type inputLabel <: String; inputLabel], '[inputTpe]) =>
-            '{
-              new InputElem:
-                override type Type = inputTpe
-                override type Label = inputLabel
-                override type Metadata = EmptyTuple
-            }
-          case (_, _) => wontHappen
+        // Term-param symbols of the member, flattened across param lists, aligned positionally
+        // with the flattened `params` from `extract`. Empty for vals / no-parens defs.
+        val paramSymsFlat = member.paramSymss.flatten.filterNot(_.isType)
+        val inputElems = params
+          .zip(paramSymsFlat)
+          .map: (param, paramSym) =>
+            (param.name, param.tpe, metaTypeOf(paramSym)) match
+              case (
+                    '[type inputLabel <: String; inputLabel],
+                    '[inputTpe],
+                    '[type paramMeta <: Tuple; paramMeta],
+                  ) =>
+                '{
+                  new InputElem:
+                    override type Type = inputTpe
+                    override type Label = inputLabel
+                    override type Metadata = paramMeta
+                }
+              case (_, _, _) => wontHappen
+        // Per-param-list arities (term params only). `paramSymss` is `Nil` for no-parens
+        // defs / vals and `List(Nil)` for an empty-parens `def f()`, so this faithfully
+        // distinguishes the two shapes while keeping `InputElems` flattened.
+        val paramListSizes: List[Int] = member.paramSymss.map(_.count(!_.isType))
+        val paramListsType: Type[? <: Tuple] =
+          paramListSizes.foldRight[Type[? <: Tuple]](Type.of[EmptyTuple]):
+            case (n, '[type acc <: Tuple; acc]) =>
+              ConstantType(IntConstant(n)).asType match
+                case '[type nT <: Int; nT] => Type.of[nT *: acc]
+                case _ => wontHappen
+            case (_, _) => wontHappen
         (
           opTpe.asType,
           labelTypeOf(member, member.name),
           metaTypeOf(member),
           outputTpe,
           Expr.ofRefinedTuple(inputElems),
+          paramListsType,
         ).runtimeChecked match
           case (
                 '[opTpe],
@@ -270,6 +321,7 @@ object Done:
                 '[type opMeta <: Tuple; opMeta],
                 '[outputTpe],
                 '{ type inputElems <: Tuple; $inputElemsExpr: inputElems },
+                '[type paramLists <: Tuple; paramLists],
               ) =>
             params match
               case Nil =>
@@ -278,6 +330,7 @@ object Done:
                     override type Label = opLabel
                     override type Metadata = opMeta
                     override type InputElems = inputElems
+                    override type ParamLists = paramLists
                     override type OutputType = outputTpe
 
                     override val inputElems: InputElems = $inputElemsExpr
@@ -287,6 +340,7 @@ object Done:
                     type Label = opLabel
                     type Metadata = opMeta
                     type InputElems = inputElems
+                    type ParamLists = paramLists
                     type OuterType = T
                     type OutputType = outputTpe
                   }
@@ -297,6 +351,7 @@ object Done:
                     override type Label = opLabel
                     override type Metadata = opMeta
                     override type InputElems = inputElems
+                    override type ParamLists = paramLists
                     override type OutputType = outputTpe
                     override type Arg = argT
 
@@ -307,6 +362,7 @@ object Done:
                     type Label = opLabel
                     type Metadata = opMeta
                     type InputElems = inputElems
+                    type ParamLists = paramLists
                     type OuterType = T
                     type OutputType = outputTpe
                     type Arg = argT
@@ -318,6 +374,7 @@ object Done:
                     override type Label = opLabel
                     override type Metadata = opMeta
                     override type InputElems = inputElems
+                    override type ParamLists = paramLists
                     override type OutputType = outputTpe
 
                     override val inputElems: InputElems = $inputElemsExpr
@@ -327,6 +384,7 @@ object Done:
                     type Label = opLabel
                     type Metadata = opMeta
                     type InputElems = inputElems
+                    type ParamLists = paramLists
                     type OuterType = T
                     type OutputType = outputTpe
                   }

@@ -13,6 +13,7 @@ class DoneTest extends munit.FunSuite:
         type Label = "external_id"
         type Metadata = EmptyTuple
         type InputElems = EmptyTuple
+        type ParamLists = EmptyTuple
         type OuterType = NamedService
         type OutputType = String
       } *: DoneOperation.SingleApply {
@@ -24,6 +25,7 @@ class DoneTest extends munit.FunSuite:
             type Label = "message"
             type Metadata = EmptyTuple
           } *: EmptyTuple
+        type ParamLists = 1 *: EmptyTuple
         type OuterType = NamedService
         type OutputType = Boolean
         type Arg = String
@@ -40,12 +42,14 @@ class DoneTest extends munit.FunSuite:
             type Label = "right"
             type Metadata = EmptyTuple
           } *: EmptyTuple
+        type ParamLists = 1 *: 1 *: EmptyTuple
         type OuterType = NamedService
         type OutputType = String
       } *: DoneOperation.EmptyApply {
         type Label = "version"
         type Metadata = EmptyTuple
         type InputElems = EmptyTuple
+        type ParamLists = EmptyTuple
         type OuterType = NamedService
         type OutputType = Int
       } *: EmptyTuple
@@ -61,6 +65,7 @@ class DoneTest extends munit.FunSuite:
         type Label = "endpoint"
         type Metadata = EmptyTuple
         type InputElems = EmptyTuple
+        type ParamLists = EmptyTuple
         type OuterType = AliasImpl
         type OutputType = String
       } *: EmptyTuple
@@ -81,6 +86,7 @@ class DoneTest extends munit.FunSuite:
             type Label = "task"
             type Metadata = EmptyTuple
           } *: EmptyTuple
+        type ParamLists = 1 *: EmptyTuple
         type OuterType = AbstractJob
         type OutputType = Either[String, Int]
         type Arg = String
@@ -88,6 +94,7 @@ class DoneTest extends munit.FunSuite:
         type Label = "cached"
         type Metadata = EmptyTuple
         type InputElems = EmptyTuple
+        type ParamLists = EmptyTuple
         type OuterType = AbstractJob
         type OutputType = Int
       } *: EmptyTuple
@@ -108,6 +115,7 @@ class DoneTest extends munit.FunSuite:
             type Label = "raw"
             type Metadata = EmptyTuple
           } *: EmptyTuple
+        type ParamLists = 1 *: EmptyTuple
         type OuterType = Converter[Int]
         type OutputType = Int
         type Arg = String
@@ -124,6 +132,7 @@ class DoneTest extends munit.FunSuite:
         type Label = "hello"
         type Metadata = EmptyTuple
         type InputElems = EmptyTuple
+        type ParamLists = EmptyTuple
         type OuterType = Toolbox.type
         type OutputType = String
       } *: DoneOperation {
@@ -139,6 +148,7 @@ class DoneTest extends munit.FunSuite:
             type Label = "right"
             type Metadata = EmptyTuple
           } *: EmptyTuple
+        type ParamLists = 2 *: EmptyTuple
         type OuterType = Toolbox.type
         type OutputType = String
       } *: EmptyTuple
@@ -154,12 +164,14 @@ class DoneTest extends munit.FunSuite:
         type Label = "code"
         type Metadata = EmptyTuple
         type InputElems = EmptyTuple
+        type ParamLists = EmptyTuple
         type OuterType = ServiceState
         type OutputType = String
       } *: DoneOperation.EmptyApply {
         type Label = "isTerminal"
         type Metadata = EmptyTuple
         type InputElems = EmptyTuple
+        type ParamLists = EmptyTuple
         type OuterType = ServiceState
         type OutputType = Boolean
       } *: EmptyTuple
@@ -175,12 +187,14 @@ class DoneTest extends munit.FunSuite:
         type Label = "id"
         type Metadata = EmptyTuple
         type InputElems = EmptyTuple
+        type ParamLists = EmptyTuple
         type OuterType = RenamedService
         type OutputType = String
       } *: DoneOperation.EmptyApply {
         type Label = "ping"
         type Metadata = (Meta @MethodMarker) *: EmptyTuple
         type InputElems = EmptyTuple
+        type ParamLists = EmptyTuple
         type OuterType = RenamedService
         type OutputType = Boolean
       } *: EmptyTuple
@@ -196,12 +210,14 @@ class DoneTest extends munit.FunSuite:
         type Label = "items"
         type Metadata = EmptyTuple
         type InputElems = EmptyTuple
+        type ParamLists = EmptyTuple
         type OuterType = ComplexReturns
         type OutputType = List[String]
       } *: DoneOperation.EmptyApply {
         type Label = "mapping"
         type Metadata = EmptyTuple
         type InputElems = EmptyTuple
+        type ParamLists = EmptyTuple
         type OuterType = ComplexReturns
         type OutputType = Map[String, Int]
       } *: DoneOperation.SingleApply {
@@ -213,6 +229,7 @@ class DoneTest extends munit.FunSuite:
             type Label = "name"
             type Metadata = EmptyTuple
           } *: EmptyTuple
+        type ParamLists = 1 *: EmptyTuple
         type OuterType = ComplexReturns
         type OutputType = Either[String, Int]
         type Arg = String
@@ -229,7 +246,9 @@ class DoneTest extends munit.FunSuite:
     } = Done.derived[EmptyService]
   }
 
-  test("methods with multiple parameter lists are represented as one operation") {
+  test("multi-param-list method derives faithfully (flat InputElems + per-list arity)") {
+    // `def combine(left: String)(right: Int)` keeps a flat InputElems (left, right) but
+    // additionally records ParamLists = (1, 1) so dispatch can reconstruct list boundaries.
     val _: Done {
       type Type = MultiListService
       type Label = "MultiListService"
@@ -247,6 +266,7 @@ class DoneTest extends munit.FunSuite:
             type Label = "right"
             type Metadata = EmptyTuple
           } *: EmptyTuple
+        type ParamLists = 1 *: 1 *: EmptyTuple
         type OuterType = MultiListService
         type OutputType = String
       } *: EmptyTuple
@@ -262,6 +282,7 @@ class DoneTest extends munit.FunSuite:
         type Label = "zero"
         type Metadata = EmptyTuple
         type InputElems = EmptyTuple
+        type ParamLists = EmptyTuple
         type OuterType = MathTools.type
         type OutputType = Int
       } *: DoneOperation.SingleApply {
@@ -273,6 +294,7 @@ class DoneTest extends munit.FunSuite:
             type Label = "value"
             type Metadata = EmptyTuple
           } *: EmptyTuple
+        type ParamLists = 1 *: EmptyTuple
         type OuterType = MathTools.type
         type OutputType = String
         type Arg = Int
@@ -289,12 +311,14 @@ class DoneTest extends munit.FunSuite:
         type Label = "magic"
         type Metadata = EmptyTuple
         type InputElems = EmptyTuple
+        type ParamLists = EmptyTuple
         type OuterType = ValHolder
         type OutputType = Int
       } *: DoneOperation.EmptyApply {
         type Label = "message"
         type Metadata = EmptyTuple
         type InputElems = EmptyTuple
+        type ParamLists = EmptyTuple
         type OuterType = ValHolder
         type OutputType = String
       } *: EmptyTuple
@@ -315,6 +339,7 @@ class DoneTest extends munit.FunSuite:
             type Label = "msg"
             type Metadata = EmptyTuple
           } *: EmptyTuple
+        type ParamLists = 1 *: EmptyTuple
         type OuterType = UnitReturning
         type OutputType = Unit
         type Arg = String
@@ -322,6 +347,7 @@ class DoneTest extends munit.FunSuite:
         type Label = "tick"
         type Metadata = EmptyTuple
         type InputElems = EmptyTuple
+        type ParamLists = EmptyTuple
         type OuterType = UnitReturning
         type OutputType = Unit
       } *: EmptyTuple
@@ -342,6 +368,7 @@ class DoneTest extends munit.FunSuite:
             type Label = "base"
             type Metadata = EmptyTuple
           } *: EmptyTuple
+        type ParamLists = 1 *: EmptyTuple
         type OuterType = FuncAndTuple
         type OutputType = Int => Int
         type Arg = Int
@@ -349,13 +376,20 @@ class DoneTest extends munit.FunSuite:
         type Label = "pair"
         type Metadata = EmptyTuple
         type InputElems = EmptyTuple
+        type ParamLists = EmptyTuple
         type OuterType = FuncAndTuple
         type OutputType = (Int, String)
       } *: EmptyTuple
     } = Done.derived[FuncAndTuple]
   }
 
-  test("methods with empty parameter list yield empty InputElems") {
+  test("no-parens `def a` and empty-parens `def b()` derive to DISTINCT shapes") {
+    // Both have empty InputElems, but the ParamLists discriminator differs:
+    //   no-parens   `def a`  -> ParamLists = EmptyTuple        (zero param lists)
+    //   empty-parens `def b()` -> ParamLists = 0 *: EmptyTuple  (one param list of arity 0)
+    // The param-list shape is recorded via the `ParamLists` type member (tuple of
+    // singleton-Int per-list arities); the full tuple-of-tuples InputElems split is deferred.
+    // This is the "faithful enough to dispatch" representation.
     val _: Done {
       type Type = EmptyParens
       type Label = "EmptyParens"
@@ -364,27 +398,39 @@ class DoneTest extends munit.FunSuite:
         type Label = "a"
         type Metadata = EmptyTuple
         type InputElems = EmptyTuple
+        type ParamLists = EmptyTuple
         type OuterType = EmptyParens
         type OutputType = Int
       } *: DoneOperation.EmptyApply {
         type Label = "b"
         type Metadata = EmptyTuple
         type InputElems = EmptyTuple
+        type ParamLists = 0 *: EmptyTuple
         type OuterType = EmptyParens
         type OutputType = Int
       } *: EmptyTuple
     } = Done.derived[EmptyParens]
   }
 
-  test("methods inherited without override do not appear in child operations") {
+  test("inherited-not-overridden methods appear in child operations") {
+    // Child extends Base; `inherited` is declared on the parent and NOT overridden.
+    // It must surface in the child's Operations (alongside the child's own `childOnly`).
     val _: Done {
       type Type = NonOverridingChild
       type Label = "NonOverridingChild"
       type Metadata = EmptyTuple
       type Operations = DoneOperation.EmptyApply {
+        type Label = "inherited"
+        type Metadata = EmptyTuple
+        type InputElems = EmptyTuple
+        type ParamLists = EmptyTuple
+        type OuterType = NonOverridingChild
+        type OutputType = String
+      } *: DoneOperation.EmptyApply {
         type Label = "childOnly"
         type Metadata = EmptyTuple
         type InputElems = EmptyTuple
+        type ParamLists = EmptyTuple
         type OuterType = NonOverridingChild
         type OutputType = Int
       } *: EmptyTuple
@@ -475,6 +521,7 @@ class DoneTest extends munit.FunSuite:
           type Label = "x"
           type Metadata = EmptyTuple
         } *: EmptyTuple
+        type ParamLists = 1 *: EmptyTuple
         type OuterType = OverloadedCompute
         type OutputType = Int
         type Arg = Int
@@ -487,6 +534,7 @@ class DoneTest extends munit.FunSuite:
             type Label = "x"
             type Metadata = EmptyTuple
           } *: EmptyTuple
+        type ParamLists = 1 *: EmptyTuple
         type OuterType = OverloadedCompute
         type OutputType = String
         type Arg = String
@@ -494,10 +542,46 @@ class DoneTest extends munit.FunSuite:
     } = Done.derived[OverloadedCompute]
   }
 
+  // --- parameter-level annotations are captured into InputElem.Metadata ---
+
+  test("annotated parameter yields non-EmptyTuple InputElem.Metadata") {
+    val _: Done {
+      type Type = AnnParamSvc
+      type Label = "AnnParamSvc"
+      type Metadata = EmptyTuple
+      type Operations = DoneOperation.SingleApply {
+        type Label = "f"
+        type Metadata = EmptyTuple
+        type InputElems = InputElem {
+          type Type = Int
+          type Label = "arg"
+          type Metadata = (Meta @ParamMarker) *: EmptyTuple
+        } *: EmptyTuple
+        type ParamLists = 1 *: EmptyTuple
+        type OuterType = AnnParamSvc
+        type OutputType = Unit
+        type Arg = Int
+      } *: EmptyTuple
+    } = Done.derived[AnnParamSvc]
+  }
+
+  test("getAnnotation/hasAnnotation read the annotation on the param InputElem") {
+    val done = Done.derived[AnnParamSvc]
+    val fOp *: EmptyTuple = done.operations
+    val argElem *: EmptyTuple = fOp.inputElems
+
+    assert(argElem.hasAnnotation[ParamMarker])
+    assert(argElem.getAnnotation[ParamMarker].isDefined)
+  }
+
 // --- Fixtures ---
 
 class ServiceMarker extends MetaAnnotation
 class MethodMarker extends MetaAnnotation
+class ParamMarker extends MetaAnnotation
+
+trait AnnParamSvc:
+  def f(@ParamMarker arg: Int): Unit
 
 @ServiceMarker
 trait NamedService:

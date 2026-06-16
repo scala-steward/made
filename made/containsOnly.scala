@@ -15,6 +15,12 @@ object containsOnly extends containsOnlyLowPriority:
 
   inline given [Tup <: Tuple, T] => (ev: Loop[Tup, T] =:= true) => containsOnly[Tup, T] = true
 
+  /** A constant map `[_] =>> C` makes every element `C`. Unifies even for abstract `Es`. */
+  given [Es <: Tuple, C] => (Tuple.Map[Es, [_] =>> C] containsOnly C) = refl
+
+  /** A covariant `F` gives `F[e] <: F[Any]` for every element (invariant `F` still needs `refl`). */
+  given [Es <: Tuple, F[+_]] => (Tuple.Map[Es, F] containsOnly F[Any]) = refl
+
   import scala.language.implicitConversions
 
   given [Tup <: Tuple, T] => (@unused ev: Tup containsOnly T) => Conversion[Tuple.Head[Tup], T] = _.asInstanceOf[T]

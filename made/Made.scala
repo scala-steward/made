@@ -88,6 +88,9 @@ sealed trait Made:
    */
   given GeneratedElems containsOnly GeneratedMadeElem = containsOnly.refl
 
+  /** [[ElemLabels]] is all `String`s; path-dependent, so it stays in scope for the `ElemLabels` alias. */
+  given ElemLabels containsOnly String = containsOnly.refl
+
 /**
  * Base type for elements within a [[Made.Elems]] tuple.
  *
@@ -247,6 +250,9 @@ object MadeElem:
 
   type ExtractMeta[M /* <: MadeElem */ ] <: Tuple = M match
     case MetaOf[meta] => meta
+
+  /** `ExtractLabel <: String`, so any `Tuple.Map[Es, ExtractLabel]` is all `String`s (e.g. generated-elem labels). */
+  given [Es <: Tuple] => (Tuple.Map[Es, ExtractLabel] containsOnly String) = containsOnly.refl
 
 object Made:
   type Of[T] = Made { type Type = T }
@@ -728,6 +734,9 @@ object Made:
     /** Constructs an instance of `Type` from a typed tuple of field values. */
     def fromTuple(elems: ElemTypes): Type
 
+    /** A product's [[Elems]] are all [[MadeFieldElem]]s; refines the base `containsOnly MadeElem`. */
+    given Elems containsOnly MadeFieldElem = containsOnly.refl
+
   /**
    * Mirror for sum types (sealed traits and enums).
    *
@@ -745,6 +754,9 @@ object Made:
   sealed trait Sum extends Made:
     /** Returns the zero-based index of `value`'s runtime subtype within [[Elems]]. */
     def ordinal(value: Type): Int
+
+    /** A sum's [[Elems]] are all [[MadeSubElem]]s; refines the base `containsOnly MadeElem`. */
+    given Elems containsOnly MadeSubElem = containsOnly.refl
 
   /**
    * Mirror for singleton types (objects and Unit).
@@ -794,6 +806,9 @@ object Made:
     def wrap(value: ElemType): Type
 
     final def generatedElems: GeneratedElems = EmptyTuple
+
+    /** A transparent type's single [[Elems]] entry is a [[MadeFieldElem]]; refines `containsOnly MadeElem`. */
+    given Elems containsOnly MadeFieldElem = containsOnly.refl
 
   // workaround for https://github.com/scala/scala3/issues/25245
   private sealed trait TransparentWorkaround[T, U] extends Made.Transparent:

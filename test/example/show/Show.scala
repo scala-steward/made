@@ -21,7 +21,7 @@ object Show:
 
   inline def deriveProduct[T <: Product](m: Made.ProductOf[T]): Show[T] = value =>
     val typeName = compiletime.constValue[m.Label]
-    val labels = compiletime.constValueTuple[m.ElemLabels].toList.asInstanceOf[List[String]]
+    val labels = compiletime.constValueTuple[m.ElemLabels].toArrayOf[String]
     val values = value.productIterator.toList
     val fieldShows = compiletime.summonAll[Tuple.Map[m.ElemTypes, Show]].toList.asInstanceOf[List[Show[Any]]]
     val fields = labels.lazyZip(values).lazyZip(fieldShows).map((label, value, s) => s"$label = ${s.show(value)}")
