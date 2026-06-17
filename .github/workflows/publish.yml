@@ -7,7 +7,21 @@ on:
 
 jobs:
   publish:
+    name: Publish (${{ matrix.platform }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: jvm
+            args: ""
+          - platform: scala-native
+            args: "--native-version 0.5.11"
+          # Scala.js skips the doc JAR (--doc=false): scaladoc crashes on Scala.js in this dotty
+          # (JUnitBootstrappers.hasTests ClassCastException). If Central rejects the made_sjs1_3
+          # release for a missing javadoc, attach a stub javadoc JAR for the JS coordinate only.
+          - platform: scala-js
+            args: "--js-version 1.21.0 --doc=false"
     steps:
       - uses: actions/checkout@v6
         with:
@@ -22,7 +36,7 @@ jobs:
           PGP_PRIVATE_KEY: ${{ secrets.PGP_PRIVATE_KEY }}
           PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
         run: |
-          scala-cli --power publish . --verbose \
+          scala-cli --power publish . --verbose --platform ${{ matrix.platform }} ${{ matrix.args }} \
             --user "env:SONATYPE_USERNAME" \
             --password "env:SONATYPE_PASSWORD" \
             --secret-key "env:PGP_PRIVATE_KEY" \
